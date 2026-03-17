@@ -171,12 +171,8 @@ export const useProjectStore = create<ProjectStore>()(
       reloadProjects: async () => {
         const { activeAccountId } = get();
         if (!activeAccountId) return;
-        const { data } = await supabase
-          .from('projects')
-          .select('id, name, account_id')
-          .eq('account_id', activeAccountId)
-          .order('created_at', { ascending: true });
-        const projects: Project[] = (data ?? []).map(p => ({
+        const { data } = await supabase.rpc('get_my_projects', { p_account_id: activeAccountId });
+        const projects: Project[] = (data ?? []).map((p: { id: string; name: string; account_id: string }) => ({
           id: p.id,
           name: p.name,
           accountId: p.account_id,
