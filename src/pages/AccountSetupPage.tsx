@@ -20,7 +20,7 @@ export function AccountSetupPage() {
 
     const { error: err } = await supabase.rpc('create_account', { p_name: trimmed });
     if (err) {
-      setError('שגיאה ביצירת סביבת העבודה. נסה שוב.');
+      setError(err.message || 'שגיאה ביצירת סביבת העבודה. נסה שוב.');
       setLoading(false);
       return;
     }
