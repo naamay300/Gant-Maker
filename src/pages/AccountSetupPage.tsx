@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import styles from './AccountSetupPage.module.css';
 
 export function AccountSetupPage() {
-  const { profile, refreshAccount, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,8 +23,7 @@ export function AccountSetupPage() {
       return;
     }
 
-    await refreshAccount();
-    navigate('/app', { replace: true });
+    window.location.href = '/app';
   }
 
   return (
