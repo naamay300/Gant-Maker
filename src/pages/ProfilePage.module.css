@@ -120,17 +120,17 @@
 }
 
 .logoutBtn {
-  flex: 1;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  padding: 9px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 9px 12px;
   border-radius: 7px;
-  font-size: 13px;
+  font-size: 12px;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
-.logoutBtn:hover { background: var(--bg-hover); color: var(--today-line); border-color: var(--today-line); }
+.logoutBtn:hover { color: #e05555; }
 
 .manageLink {
   background: none;

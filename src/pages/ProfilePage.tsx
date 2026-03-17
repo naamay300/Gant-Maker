@@ -16,6 +16,10 @@ export function ProfilePage() {
   const canEditAccount = account?.role === 'owner' || account?.role === 'admin';
   const perms = usePermissions();
 
+  const hasChanges =
+    fullName.trim() !== (profile?.fullName ?? '') ||
+    (canEditAccount && accountName.trim() !== (account?.name ?? ''));
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -86,7 +90,7 @@ export function ProfilePage() {
           )}
 
           <div className={styles.actions}>
-            <button className={styles.saveBtn} type="submit" disabled={loading}>
+            <button className={styles.saveBtn} type="submit" disabled={loading || !hasChanges}>
               {saved ? '✓ נשמר' : loading ? '...' : 'שמור'}
             </button>
             <button
