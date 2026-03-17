@@ -185,6 +185,9 @@
   text-align: center;
 }
 
+/* center "משימה" label in header so אחראי is visually between it and סטטוס */
+.header .colName { justify-content: center; }
+
 /* ── Sort ── */
 .sortWrap {
   position: absolute;
