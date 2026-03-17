@@ -131,3 +131,21 @@
 }
 
 .logoutBtn:hover { background: var(--bg-hover); color: var(--today-line); border-color: var(--today-line); }
+
+.membersBtn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.membersBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(108, 99, 255, 0.06);
+}

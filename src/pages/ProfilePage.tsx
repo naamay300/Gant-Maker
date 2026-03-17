@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { supabase } from '../lib/supabase';
 import styles from './ProfilePage.module.css';
 
@@ -13,6 +14,7 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(false);
 
   const canEditAccount = account?.role === 'owner' || account?.role === 'admin';
+  const perms = usePermissions();
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +92,16 @@ export function ProfilePage() {
               יציאה
             </button>
           </div>
+
+          {perms.isAdmin && (
+            <button
+              type="button"
+              className={styles.membersBtn}
+              onClick={() => navigate('/settings/workspace')}
+            >
+              👥 נהל חברי סביבת העבודה
+            </button>
+          )}
         </form>
       </div>
     </div>

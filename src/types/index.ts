@@ -60,6 +60,25 @@ export interface Account {
   role: 'owner' | 'admin' | 'member';
 }
 
+export interface WorkspaceMember {
+  id: string;
+  userId: string;
+  role: 'owner' | 'admin' | 'manager' | 'member';
+  joinedAt: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: 'admin' | 'manager' | 'member';
+  createdAt: string;
+  expiresAt: string;
+  projectId: string | null;
+}
+
 export type ColorMode = 'status' | 'assignee';
 
 export type SortField =
