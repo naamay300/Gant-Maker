@@ -58,26 +58,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        await new Promise(r => setTimeout(r, 500));
-        const [p, a] = await Promise.all([
-          fetchProfile(session.user.id),
-          fetchAccount(session.user.id),
-        ]);
-        setProfile(p);
-        setAccount(a);
-      } else {
+      if (!session?.user) {
         setProfile(null);
         setAccount(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      fetchProfile(user.id),
+      fetchAccount(user.id),
+    ]).then(([p, a]) => {
+      setProfile(p);
+      setAccount(a);
+      setLoading(false);
+    });
+  }, [user?.id]);
 
   async function signIn(email: string, password: string): Promise<string | null> {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
