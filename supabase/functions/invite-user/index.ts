@@ -34,7 +34,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (!caller || !['owner', 'admin'].includes(caller.role)) {
+    if (!caller || !['owner', 'editor'].includes(caller.role)) {
       throw new Error('Insufficient permissions');
     }
 
