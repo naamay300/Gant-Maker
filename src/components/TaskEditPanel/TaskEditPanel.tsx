@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProjectStore, useActiveProject, useSelectedTask, useAllAssignees } from '../../store/useProjectStore';
-import { Assignee } from '../../types';
+import { Assignee, TaskFile, TaskLink } from '../../types';
+import { v4 as uuidv4 } from 'uuid';
 import { format, parseISO } from 'date-fns';
 import { StatusManager } from '../StatusManager/StatusManager';
 import styles from './TaskEditPanel.module.css';
@@ -33,7 +34,7 @@ function ColorPalette({ value, onChange }: { value: string; onChange: (c: string
 }
 
 export function TaskEditPanel() {
-  const { updateTask, selectTask, statuses } = useProjectStore();
+  const { updateTask, selectTask, statuses, taskFiles, fetchTaskFiles, uploadTaskFile, deleteTaskFile, getFileUrl } = useProjectStore();
   const project = useActiveProject();
   const selectedTask = useSelectedTask();
   const knownAssignees = useAllAssignees();
@@ -44,8 +45,18 @@ export function TaskEditPanel() {
   const [duration, setDuration]     = useState(7);
   const [statusId, setStatusId]     = useState('');
   const [dependencies, setDeps]     = useState<string[]>([]);
+  const [description, setDescription] = useState('');
+  const [links, setLinks]           = useState<TaskLink[]>([]);
   const [saved, setSaved]           = useState(false);
   const [editingColorFor, setEditingColorFor] = useState<string | null>(null);
+
+  // Links input
+  const [newLinkUrl, setNewLinkUrl]     = useState('');
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+
+  // File upload
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New assignee input
   const [newAssignee, setNewAssignee] = useState('');
@@ -69,6 +80,8 @@ export function TaskEditPanel() {
       setDuration(selectedTask.duration);
       setStatusId(selectedTask.statusId);
       setDeps(selectedTask.dependencies);
+      setDescription(selectedTask.description ?? '');
+      setLinks(selectedTask.links ?? []);
       setSaved(false);
       if (!selectedTask.name) setTimeout(() => nameRef.current?.focus(), 50);
     }
@@ -80,7 +93,7 @@ export function TaskEditPanel() {
   // ── Save ────────────────────────────────────────────────────────────────────
   function markChanged() { setSaved(false); }
 
-  function save(overrides?: Partial<typeof selectedTask>) {
+  function save(overrides?: Partial<typeof selectedTask>, closeAfter = false) {
     if (!selectedTask) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     setSaved(false);
@@ -92,9 +105,46 @@ export function TaskEditPanel() {
         duration: Math.max(1, overrides?.duration ?? duration),
         statusId: overrides?.statusId ?? statusId,
         dependencies: overrides?.dependencies ?? dependencies,
+        description: overrides?.description ?? description,
+        links: overrides?.links ?? links,
       });
       setSaved(true);
+      if (closeAfter) selectTask(null);
     }, 300);
+  }
+
+  // ── Links ────────────────────────────────────────────────────────────────────
+  function addLink() {
+    const url = newLinkUrl.trim();
+    if (!url) return;
+    const next: TaskLink[] = [...links, { id: uuidv4(), url, label: newLinkLabel.trim() || url }];
+    setLinks(next);
+    setNewLinkUrl('');
+    setNewLinkLabel('');
+    save({ links: next });
+  }
+
+  function removeLink(id: string) {
+    const next = links.filter((l: TaskLink) => l.id !== id);
+    setLinks(next);
+    save({ links: next });
+  }
+
+  // ── Files ────────────────────────────────────────────────────────────────────
+  async function handleFileUpload(e: { target: { files: FileList | null } }) {
+    const file = e.target.files?.[0];
+    if (!file || !selectedTask) return;
+    setUploading(true);
+    await uploadTaskFile(selectedTask.id, file);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  async function handleDownload(filePath: string, fileName: string) {
+    const url = await getFileUrl(filePath);
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
   }
 
   // ── Assignees ───────────────────────────────────────────────────────────────
@@ -395,6 +445,88 @@ export function TaskEditPanel() {
             </div>
           )}
 
+          {/* Description */}
+          <div className={styles.field}>
+            <label className={styles.label}>תיאור</label>
+            <textarea
+              className={styles.textarea}
+              value={description}
+              onChange={(e: { target: { value: string } }) => { setDescription(e.target.value); markChanged(); save({ description: e.target.value }); }}
+              placeholder="תיאור המשימה..."
+              rows={3}
+            />
+          </div>
+
+          {/* Links */}
+          <div className={styles.field}>
+            <label className={styles.label}>קישורים</label>
+            {links.length > 0 && (
+              <div className={styles.linksList}>
+                {links.map((link: TaskLink) => (
+                  <div key={link.id} className={styles.linkRow}>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className={styles.linkAnchor}>
+                      🔗 {link.label}
+                    </a>
+                    <button className={styles.removeTag} onClick={() => removeLink(link.id)}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className={styles.linkAddRow}>
+              <input
+                className={styles.input}
+                placeholder="כתובת URL..."
+                value={newLinkUrl}
+                onChange={(e: { target: { value: string } }) => setNewLinkUrl(e.target.value)}
+                onKeyDown={(e: { key: string }) => { if (e.key === 'Enter') addLink(); }}
+              />
+              <input
+                className={styles.input}
+                placeholder="תווית (אופציונלי)"
+                value={newLinkLabel}
+                onChange={(e: { target: { value: string } }) => setNewLinkLabel(e.target.value)}
+                onKeyDown={(e: { key: string }) => { if (e.key === 'Enter') addLink(); }}
+              />
+              <button className={styles.addBtn} onClick={addLink} title="הוסף קישור">+</button>
+            </div>
+          </div>
+
+          {/* Files */}
+          <div className={styles.field}>
+            <label className={styles.label}>קבצים מצורפים</label>
+            {taskFiles.length > 0 && (
+              <div className={styles.filesList}>
+                {taskFiles.map((f: TaskFile) => (
+                  <div key={f.id} className={styles.fileRow}>
+                    <button className={styles.fileNameBtn} onClick={() => handleDownload(f.filePath, f.fileName)}>
+                      📄 {f.fileName}
+                    </button>
+                    <button
+                      className={styles.removeTag}
+                      onClick={() => deleteTaskFile(f.id, f.filePath)}
+                      title="מחק קובץ"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className={styles.fileUploadRow}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
+              <button
+                className={styles.uploadBtn}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? 'מעלה...' : '+ העלה קובץ'}
+              </button>
+            </div>
+          </div>
+
           {/* Created at */}
           {createdAtFormatted && (
             <div className={styles.createdAt}>
@@ -406,7 +538,7 @@ export function TaskEditPanel() {
         <div className={styles.footer}>
           <button
             className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
-            onClick={() => save()}
+            onClick={() => save(undefined, true)}
           >
             {saved ? '✓ נשמר' : 'שמור'}
           </button>

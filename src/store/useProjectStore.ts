@@ -5,7 +5,7 @@ import { format, addDays, parseISO } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import {
   Project, Task, CustomStatus, ColorMode,
-  SortField, SortDirection, Assignee,
+  SortField, SortDirection, Assignee, TaskLink, TaskFile,
 } from '../types';
 
 // ─── DB conversion helpers ────────────────────────────────────────────────────
@@ -22,6 +22,19 @@ function taskFromDB(row: Record<string, unknown>): Task {
     statusId: (row.status_id as string) ?? '',
     createdAt: row.created_at as string,
     order: row.task_order as number,
+    description: (row.description as string) ?? '',
+    links: (row.links as TaskLink[]) ?? [],
+  };
+}
+
+function fileFromDB(row: Record<string, unknown>): TaskFile {
+  return {
+    id: row.id as string,
+    taskId: row.task_id as string,
+    fileName: row.file_name as string,
+    filePath: row.file_path as string,
+    fileSize: (row.file_size as number) ?? 0,
+    createdAt: row.created_at as string,
   };
 }
 
@@ -126,6 +139,13 @@ interface ProjectStore {
   reorderTasks: (orderedIds: string[]) => void;
   selectTask: (taskId: string | null) => void;
 
+  // Files
+  taskFiles: TaskFile[];
+  fetchTaskFiles: (taskId: string) => Promise<void>;
+  uploadTaskFile: (taskId: string, file: File) => Promise<void>;
+  deleteTaskFile: (fileId: string, filePath: string) => Promise<void>;
+  getFileUrl: (filePath: string) => Promise<string | null>;
+
   // Status
   addStatus: (name: string, color: string) => CustomStatus;
   updateStatus: (id: string, updates: Partial<Omit<CustomStatus, 'id'>>) => void;
@@ -152,8 +172,9 @@ export const useProjectStore = create<ProjectStore>()(
       filters: { statusIds: [], assignees: [] },
       sortField: 'manual',
       sortDirection: 'asc',
-      taskListWidth: 320,
+      taskListWidth: 420,
       isLoading: false,
+      taskFiles: [] as TaskFile[],
 
       // ── Initialization ────────────────────────────────────────────────────
       initializeApp: async (accountId: string) => {
@@ -272,6 +293,8 @@ export const useProjectStore = create<ProjectStore>()(
           statusId: defaultStatusId ?? '',
           createdAt: now,
           order: maxOrder + 1,
+          description: '',
+          links: [],
         };
 
         set(s => ({
@@ -317,6 +340,8 @@ export const useProjectStore = create<ProjectStore>()(
         if (updates.statusId !== undefined) dbUpdates.status_id = updates.statusId || null;
         if (updates.dependencies !== undefined) dbUpdates.dependencies = updates.dependencies;
         if (updates.order !== undefined) dbUpdates.task_order = updates.order;
+        if (updates.description !== undefined) dbUpdates.description = updates.description;
+        if (updates.links !== undefined) dbUpdates.links = updates.links;
 
         supabase.from('tasks').update(dbUpdates).eq('id', taskId)
           .then(({ error }) => { if (error) console.error(error); });
@@ -370,7 +395,49 @@ export const useProjectStore = create<ProjectStore>()(
         });
       },
 
-      selectTask: (taskId: string | null) => set({ selectedTaskId: taskId }),
+      selectTask: (taskId: string | null) => {
+        set({ selectedTaskId: taskId, taskFiles: [] });
+        if (taskId) get().fetchTaskFiles(taskId);
+      },
+
+      // ── Files ─────────────────────────────────────────────────────────────
+      fetchTaskFiles: async (taskId: string) => {
+        const { data } = await supabase
+          .from('task_files')
+          .select('*')
+          .eq('task_id', taskId)
+          .order('created_at', { ascending: true });
+        set({ taskFiles: (data ?? []).map((r: Record<string, unknown>) => fileFromDB(r)) });
+      },
+
+      uploadTaskFile: async (taskId: string, file: File) => {
+        const path = `${taskId}/${uuidv4()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('task-files')
+          .upload(path, file);
+        if (uploadError) { console.error(uploadError); return; }
+        await supabase.from('task_files').insert({
+          task_id: taskId,
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+        });
+        await get().fetchTaskFiles(taskId);
+      },
+
+      deleteTaskFile: async (fileId: string, filePath: string) => {
+        await supabase.storage.from('task-files').remove([filePath]);
+        await supabase.from('task_files').delete().eq('id', fileId);
+        const { selectedTaskId } = get();
+        if (selectedTaskId) await get().fetchTaskFiles(selectedTaskId);
+      },
+
+      getFileUrl: async (filePath: string) => {
+        const { data } = await supabase.storage
+          .from('task-files')
+          .createSignedUrl(filePath, 3600);
+        return data?.signedUrl ?? null;
+      },
 
       // ── Statuses ──────────────────────────────────────────────────────────
       addStatus: (name: string, color: string) => {
@@ -408,7 +475,7 @@ export const useProjectStore = create<ProjectStore>()(
       setFilters: (f) => set(s => ({ filters: { ...s.filters, ...f } })),
       setSortField: (field) => set({ sortField: field }),
       setSortDirection: (dir) => set({ sortDirection: dir }),
-      setTaskListWidth: (width) => set({ taskListWidth: Math.min(600, Math.max(200, width)) }),
+      setTaskListWidth: (width) => set({ taskListWidth: Math.min(600, Math.max(360, width)) }),
     }),
     {
       name: 'gantt-ui-v3',
@@ -418,6 +485,11 @@ export const useProjectStore = create<ProjectStore>()(
         sortField: state.sortField,
         sortDirection: state.sortDirection,
         taskListWidth: state.taskListWidth,
+      }),
+      merge: (persisted: unknown, current: ProjectStore) => ({
+        ...current,
+        ...(persisted as object),
+        taskListWidth: Math.max(360, (persisted as { taskListWidth?: number }).taskListWidth ?? 420),
       }),
     }
   )

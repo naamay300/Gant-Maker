@@ -9,6 +9,21 @@ export interface Assignee {
   color: string;
 }
 
+export interface TaskLink {
+  id: string;
+  url: string;
+  label: string;
+}
+
+export interface TaskFile {
+  id: string;
+  taskId: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   number: number;
@@ -20,6 +35,8 @@ export interface Task {
   statusId: string;        // references CustomStatus.id
   createdAt: string;       // ISO datetime
   order: number;           // for manual sorting
+  description: string;
+  links: TaskLink[];
 }
 
 export interface Project {

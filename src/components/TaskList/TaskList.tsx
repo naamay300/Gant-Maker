@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Task, SortField } from '../../types';
+import { format, parseISO } from 'date-fns';
 import { useProjectStore, useSortedFilteredTasks, useActiveProject } from '../../store/useProjectStore';
 import styles from './TaskList.module.css';
 
@@ -100,6 +101,7 @@ export function TaskList({ ganttScrollRef }: Props) {
         <div className={styles.colHandle} />
         <div className={styles.colNum}>#</div>
         <div className={styles.colName}>משימה</div>
+        <div className={styles.colDate}>תאריך</div>
         <div className={styles.colAssignee}>אחראי</div>
         <div className={styles.colStatus}>סטטוס</div>
         <div className={styles.colDep} />
@@ -171,13 +173,24 @@ export function TaskList({ ganttScrollRef }: Props) {
                   <span className={styles.taskName}>{task.name || <em className={styles.unnamed}>ללא שם</em>}</span>
                 </div>
 
+                <div className={styles.colDate}>
+                  <span className={styles.dateLabel}>
+                    {task.startDate ? format(parseISO(task.startDate), 'dd.MM') : '—'}
+                  </span>
+                </div>
+
                 <div className={styles.colAssignee}>
-                  <div className={styles.assigneeDots}>
-                    {task.assignees.slice(0, 3).map(a => (
-                      <span key={a.name} className={styles.assigneeDot} style={{ background: a.color }} title={a.name} />
-                    ))}
-                    {task.assignees.length > 3 && <span className={styles.moreAssignees}>+{task.assignees.length - 3}</span>}
-                  </div>
+                  {task.assignees.length === 0 ? (
+                    <span className={styles.noAssignee}>—</span>
+                  ) : (
+                    <div className={styles.assigneeCell}>
+                      <span className={styles.assigneeDot} style={{ background: task.assignees[0].color }} />
+                      <span className={styles.assigneeName}>{task.assignees[0].name}</span>
+                      {task.assignees.length > 1 && (
+                        <span className={styles.moreAssignees}>+{task.assignees.length - 1}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.colStatus}>
