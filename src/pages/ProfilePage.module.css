@@ -1,28 +1,25 @@
 .page {
   min-height: 100vh;
+  background: var(--bg-primary);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: var(--bg-primary);
-  padding: 40px 24px;
+  padding: 40px 20px 60px;
 }
 
-.card {
+.container {
   width: 100%;
   max-width: 440px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .topBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 4px;
 }
 
 .backBtn {
@@ -31,7 +28,6 @@
   font-size: 13px;
   transition: color 0.1s;
 }
-
 .backBtn:hover { color: var(--text-primary); }
 
 .pageTitle {
@@ -40,35 +36,78 @@
   color: var(--text-primary);
 }
 
-.avatar {
+/* ── Avatar ── */
+.avatarRow {
   display: flex;
   justify-content: center;
+  margin-bottom: 8px;
 }
 
 .avatarImg {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--accent);
 }
 
 .avatarInitial {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.form { display: flex; flex-direction: column; gap: 14px; }
+/* ── Section label ── */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
 
-.field { display: flex; flex-direction: column; gap: 5px; }
+.wsName {
+  color: var(--text-primary);
+  text-transform: none;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Form fields ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
 .label {
   font-size: 10px;
@@ -89,57 +128,280 @@
   width: 100%;
   transition: border-color 0.15s;
 }
-
 .input:focus { border-color: var(--accent); }
 .input:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.actions { display: flex; gap: 10px; margin-top: 4px; }
-
-.saveBtn {
-  flex: 1;
-  background: var(--accent);
-  color: white;
-  padding: 9px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 700;
-  transition: background 0.15s;
+/* Inline name row */
+.nameRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.saveBtn:hover:not(:disabled) { background: var(--accent-hover); }
-.saveBtn:disabled { opacity: 0.5; }
+.nameRow .input {
+  flex: 1;
+}
+
+.saveBtnInline {
+  background: var(--accent);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background 0.15s, opacity 0.15s;
+}
+.saveBtnInline:hover:not(:disabled) { background: var(--accent-hover); }
+.saveBtnInline:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Role badges ── */
+.roleBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  text-transform: none;
+  letter-spacing: 0;
+}
 
 .roleTag {
   font-size: 10px;
-  font-weight: 600;
-  background: var(--accent);
-  color: white;
-  padding: 1px 6px;
-  border-radius: 10px;
-  margin-right: 6px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+.role_owner   { color: #f7971e; border-color: #f7971e55; background: rgba(247,151,30,0.1); }
+.role_admin   { color: #6c63ff; border-color: #6c63ff55; background: rgba(108,99,255,0.1); }
+.role_manager { color: #43b89c; border-color: #43b89c55; background: rgba(67,184,156,0.1); }
+.role_member  { color: var(--text-muted); border-color: var(--border); background: var(--bg-tertiary); }
+
+/* ── Members list ── */
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.memberRow:last-child { border-bottom: none; }
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.memberInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.memberName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.memberEmail {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Invite form ── */
+.inviteForm {
+  display: flex;
+  gap: 8px;
+}
+
+.inviteBtn {
+  padding: 8px 14px;
+  background: var(--accent);
+  color: white;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.inviteBtn:hover:not(:disabled) { background: var(--accent-hover); }
+.inviteBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.inviteMsg {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.inviteMsgOk  { color: #43b89c; background: rgba(67,184,156,0.1); }
+.inviteMsgErr { color: #e05555; background: rgba(220,60,60,0.1); }
+
+/* ── Projects list ── */
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.projectRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.projectRow:last-child { border-bottom: none; }
+
+.projectLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.projectName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.taskCount {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.projectRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.memberChip {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+.memberChip:hover { opacity: 0.7; }
+
+.addMemberWrap {
+  position: relative;
+}
+
+.addMemberBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: none;
+  border: 1.5px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+  line-height: 1;
+}
+.addMemberBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+.memberDropdown {
+  position: absolute;
+  left: 0;
+  top: 32px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  min-width: 160px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  transition: background 0.1s;
+}
+.dropdownItem:hover { background: var(--bg-hover); }
+
+.avatarSm {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dropdownEmpty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px;
+  text-align: center;
+}
+
+/* ── Logout ── */
 .logoutBtn {
   background: none;
   border: none;
   color: var(--text-muted);
-  padding: 9px 12px;
-  border-radius: 7px;
   font-size: 12px;
-  transition: all 0.15s;
-  flex-shrink: 0;
+  cursor: pointer;
+  padding: 8px 0;
+  text-align: center;
+  transition: color 0.1s;
+  margin-top: 4px;
 }
-
 .logoutBtn:hover { color: #e05555; }
 
-.manageLink {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 2px 0;
-  text-align: right;
-  transition: opacity 0.1s;
-}
-.manageLink:hover { opacity: 0.7; }
+/* ── States ── */
+.loading { text-align: center; color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+.empty   { text-align: center; color: var(--text-muted); font-size: 13px; padding: 8px 0; }

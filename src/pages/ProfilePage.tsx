@@ -1,65 +1,195 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { usePermissions } from '../hooks/usePermissions';
 import { supabase } from '../lib/supabase';
 import styles from './ProfilePage.module.css';
 
+interface Member {
+  userId: string;
+  email: string;
+  fullName: string;
+  role: string;
+}
+
+interface ProjectMember {
+  userId: string;
+  email: string;
+  fullName: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  taskCount: number;
+  members: ProjectMember[];
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'בעלים',
+  admin: 'אדמין',
+  manager: 'מנהל',
+  member: 'חבר',
+};
+
 export function ProfilePage() {
-  const { profile, account, updateProfile, refreshAccount, signOut } = useAuth();
+  const { profile, account, session, updateProfile, signOut } = useAuth();
   const navigate = useNavigate();
+
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
-  const [accountName, setAccountName] = useState(account?.name ?? '');
   const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const canEditAccount = account?.role === 'owner' || account?.role === 'admin';
-  const perms = usePermissions();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [wsLoading, setWsLoading] = useState(true);
 
-  const hasChanges =
-    fullName.trim() !== (profile?.fullName ?? '') ||
-    (canEditAccount && accountName.trim() !== (account?.name ?? ''));
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  const [addingToProject, setAddingToProject] = useState<string | null>(null);
+
+  const isAdmin = account?.role === 'owner' || account?.role === 'admin';
+  const hasChanges = fullName.trim() !== (profile?.fullName ?? '');
+
+  useEffect(() => {
+    if (!account) return;
+    Promise.all([loadMembers(), loadProjects()]).then(() => setWsLoading(false));
+  }, [account?.id]);
+
+  async function loadMembers() {
+    if (!account) return;
+    const { data } = await supabase
+      .from('account_members')
+      .select('user_id, role, profiles(email, full_name)')
+      .eq('account_id', account.id);
+    setMembers(
+      (data ?? []).map((m: { user_id: string; role: string; profiles: unknown }) => {
+        const p = m.profiles as { email: string; full_name: string } | null;
+        return { userId: m.user_id, email: p?.email ?? '', fullName: p?.full_name ?? '', role: m.role };
+      })
+    );
+  }
+
+  async function loadProjects() {
+    if (!account) return;
+    const { data } = await supabase
+      .from('projects')
+      .select('id, name, tasks(id), project_members(user_id, profiles(email, full_name))')
+      .eq('account_id', account.id);
+    setProjects(
+      (data ?? []).map((p: { id: string; name: string; tasks: unknown; project_members: unknown }) => {
+        const tasks = (p.tasks as { id: string }[]) ?? [];
+        const pm = (p.project_members as { user_id: string; profiles: { email: string; full_name: string } | null }[]) ?? [];
+        return {
+          id: p.id,
+          name: p.name,
+          taskCount: tasks.length,
+          members: pm.map((m: { user_id: string; profiles: { email: string; full_name: string } | null }) => ({
+            userId: m.user_id,
+            email: m.profiles?.email ?? '',
+            fullName: m.profiles?.full_name ?? '',
+          })),
+        };
+      })
+    );
+  }
+
+  async function handleSave() {
+    if (!hasChanges) return;
+    setSaving(true);
     await updateProfile({ fullName: fullName.trim() });
-    if (canEditAccount && accountName.trim() && accountName.trim() !== account?.name) {
-      await supabase.from('accounts').update({ name: accountName.trim() }).eq('id', account!.id);
-      await refreshAccount();
-    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-    setLoading(false);
+    setSaving(false);
   }
+
+  async function handleInvite(e: { preventDefault(): void }) {
+    e.preventDefault();
+    if (!inviteEmail.trim() || !account || !session) return;
+    setInviting(true);
+    setInviteMsg(null);
+    try {
+      const res = await fetch(
+        'https://bqrfjdwniwlwaixpzscw.supabase.co/functions/v1/invite-user',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ email: inviteEmail.trim(), role: 'member', accountId: account.id }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'שגיאה');
+      setInviteMsg({ type: 'ok', text: 'הזמנה נשלחה במייל' });
+      setInviteEmail('');
+      await loadMembers();
+    } catch (err) {
+      setInviteMsg({ type: 'err', text: (err as Error).message });
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function addMemberToProject(projectId: string, userId: string) {
+    await supabase.from('project_members').insert({ project_id: projectId, user_id: userId });
+    setAddingToProject(null);
+    await loadProjects();
+  }
+
+  async function removeMemberFromProject(projectId: string, userId: string) {
+    await supabase.from('project_members').delete()
+      .eq('project_id', projectId).eq('user_id', userId);
+    await loadProjects();
+  }
+
+  function getMembersNotInProject(project: Project) {
+    const inProject = new Set(project.members.map((m: ProjectMember) => m.userId));
+    return members.filter((m: Member) => !inProject.has(m.userId));
+  }
+
+  const initial = (profile?.fullName || profile?.email || '?')[0].toUpperCase();
 
   return (
     <div className={styles.page}>
-      <div className={styles.card}>
+      <div className={styles.container}>
         <div className={styles.topBar}>
           <button className={styles.backBtn} onClick={() => navigate('/app')}>← חזרה</button>
           <h2 className={styles.pageTitle}>פרופיל</h2>
         </div>
 
-        <div className={styles.avatar}>
+        {/* Avatar */}
+        <div className={styles.avatarRow}>
           {profile?.avatarUrl
             ? <img src={profile.avatarUrl} alt="avatar" className={styles.avatarImg} />
-            : <div className={styles.avatarInitial}>{(profile?.fullName || profile?.email || '?')[0].toUpperCase()}</div>
+            : <div className={styles.avatarInitial}>{initial}</div>
           }
         </div>
 
-        <form onSubmit={handleSave} className={styles.form}>
+        {/* ── Section 1: Personal ── */}
+        <div className={styles.sectionLabel}>פרטים אישיים</div>
+        <div className={styles.card}>
           <div className={styles.field}>
             <label className={styles.label}>שם מלא</label>
-            <input
-              className={styles.input}
-              type="text"
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              placeholder="שמך המלא"
-            />
+            <div className={styles.nameRow}>
+              <input
+                className={styles.input}
+                type="text"
+                value={fullName}
+                onChange={(e: { target: { value: string } }) => setFullName(e.target.value)}
+                placeholder="שמך המלא"
+              />
+              <button
+                className={styles.saveBtnInline}
+                onClick={handleSave}
+                disabled={saving || !hasChanges}
+              >
+                {saved ? '✓' : saving ? '...' : 'שמור'}
+              </button>
+            </div>
           </div>
-
           <div className={styles.field}>
             <label className={styles.label}>מייל</label>
             <input
@@ -70,39 +200,122 @@ export function ProfilePage() {
               dir="ltr"
             />
           </div>
+        </div>
 
-          {account && (
-            <div className={styles.field}>
-              <label className={styles.label}>סביבת עבודה {canEditAccount && <span className={styles.roleTag}>{account.role}</span>}</label>
-              <input
-                className={styles.input}
-                type="text"
-                value={accountName}
-                onChange={e => setAccountName(e.target.value)}
-                disabled={!canEditAccount}
-              />
-              {perms.isAdmin && (
-                <button type="button" className={styles.manageLink} onClick={() => navigate('/settings/workspace')}>
-                  ניהול חברים ופרויקטים ←
-                </button>
-              )}
+        {/* ── Section 2: Workspace ── */}
+        {account && (
+          <>
+            <div className={styles.sectionLabel}>
+              סביבת עבודה — <span className={styles.wsName}>{account.name}</span>
+              <span className={`${styles.roleBadge} ${styles['role_' + account.role]}`}>{ROLE_LABELS[account.role]}</span>
             </div>
-          )}
 
-          <div className={styles.actions}>
-            <button className={styles.saveBtn} type="submit" disabled={loading || !hasChanges}>
-              {saved ? '✓ נשמר' : loading ? '...' : 'שמור'}
-            </button>
-            <button
-              type="button"
-              className={styles.logoutBtn}
-              onClick={async () => { await signOut(); navigate('/login'); }}
-            >
-              יציאה
-            </button>
-          </div>
+            {wsLoading ? (
+              <div className={styles.loading}>טוען...</div>
+            ) : (
+              <>
+                {/* Members card */}
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>חברי הסביבה ({members.length})</div>
+                  <div className={styles.memberList}>
+                    {members.map((m: Member) => (
+                      <div key={m.userId} className={styles.memberRow}>
+                        <div className={styles.avatar}>{(m.fullName || m.email || '?')[0].toUpperCase()}</div>
+                        <div className={styles.memberInfo}>
+                          <span className={styles.memberName}>{m.fullName || m.email}</span>
+                          {m.fullName && <span className={styles.memberEmail}>{m.email}</span>}
+                        </div>
+                        <span className={`${styles.roleTag} ${styles['role_' + m.role]}`}>{ROLE_LABELS[m.role] ?? m.role}</span>
+                      </div>
+                    ))}
+                  </div>
 
-        </form>
+                  {isAdmin && (
+                    <form onSubmit={handleInvite} className={styles.inviteForm}>
+                      <input
+                        className={styles.input}
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e: { target: { value: string } }) => setInviteEmail(e.target.value)}
+                        placeholder="+ הזמן משתמש חדש במייל..."
+                        dir="ltr"
+                      />
+                      <button className={styles.inviteBtn} type="submit" disabled={inviting || !inviteEmail.trim()}>
+                        {inviting ? '...' : 'שלח'}
+                      </button>
+                    </form>
+                  )}
+                  {inviteMsg && (
+                    <div className={`${styles.inviteMsg} ${inviteMsg.type === 'err' ? styles.inviteMsgErr : styles.inviteMsgOk}`}>
+                      {inviteMsg.text}
+                    </div>
+                  )}
+                </div>
+
+                {/* Projects card */}
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>פרויקטים ({projects.length})</div>
+                  {projects.length === 0 && <div className={styles.empty}>אין פרויקטים עדיין</div>}
+                  <div className={styles.projectList}>
+                    {projects.map((p: Project) => (
+                      <div key={p.id} className={styles.projectRow}>
+                        <div className={styles.projectLeft}>
+                          <div className={styles.projectName}>{p.name}</div>
+                          <div className={styles.taskCount}>{p.taskCount} משימות</div>
+                        </div>
+                        <div className={styles.projectRight}>
+                          {p.members.map((m: ProjectMember) => (
+                            <div
+                              key={m.userId}
+                              className={styles.memberChip}
+                              title={m.fullName || m.email}
+                              onClick={() => isAdmin && removeMemberFromProject(p.id, m.userId)}
+                            >
+                              {(m.fullName || m.email || '?')[0].toUpperCase()}
+                            </div>
+                          ))}
+                          {isAdmin && (
+                            <div className={styles.addMemberWrap}>
+                              <button
+                                className={styles.addMemberBtn}
+                                onClick={() => setAddingToProject(addingToProject === p.id ? null : p.id)}
+                              >+</button>
+                              {addingToProject === p.id && (
+                                <div className={styles.memberDropdown}>
+                                  {getMembersNotInProject(p).length === 0
+                                    ? <div className={styles.dropdownEmpty}>כולם כבר משויכים</div>
+                                    : getMembersNotInProject(p).map((m: Member) => (
+                                      <button
+                                        key={m.userId}
+                                        className={styles.dropdownItem}
+                                        onClick={() => addMemberToProject(p.id, m.userId)}
+                                      >
+                                        <div className={styles.avatarSm}>{(m.fullName || m.email || '?')[0].toUpperCase()}</div>
+                                        <span>{m.fullName || m.email}</span>
+                                      </button>
+                                    ))
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Logout at bottom */}
+        <button
+          className={styles.logoutBtn}
+          onClick={async () => { await signOut(); navigate('/login'); }}
+        >
+          יציאה מהחשבון
+        </button>
       </div>
     </div>
   );
