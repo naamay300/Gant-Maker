@@ -1,4 +1,5 @@
 import { Task } from '../../types';
+import { useProjectStore } from '../../store/useProjectStore';
 import { dateToPixelOffset, ROW_HEIGHT, PIXELS_PER_DAY } from '../../utils/dateUtils';
 
 interface Props {
@@ -7,25 +8,31 @@ interface Props {
 }
 
 export function DependencyArrows({ tasks, timelineStart }: Props) {
+  const { statuses } = useProjectStore();
+
   const taskIndex: Record<string, number> = {};
   tasks.forEach((t, i) => { taskIndex[t.id] = i; });
 
-  const arrows: { id: string; x1: number; y1: number; x2: number; y2: number }[] = [];
+  const arrows: { id: string; x1: number; y1: number; x2: number; y2: number; done: boolean }[] = [];
 
   tasks.forEach((task) => {
     task.dependencies.forEach((depId) => {
       const depTask = tasks.find(t => t.id === depId);
       if (!depTask || !(depId in taskIndex) || !(task.id in taskIndex)) return;
 
-      const fromIdx = taskIndex[depId];
-      const toIdx = taskIndex[task.id];
+      const depIdx = taskIndex[depId];
+      const taskIdx = taskIndex[task.id];
 
-      const x1 = dateToPixelOffset(depTask.startDate, timelineStart) + depTask.duration * PIXELS_PER_DAY;
-      const y1 = fromIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
-      const x2 = dateToPixelOffset(task.startDate, timelineStart);
-      const y2 = toIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
+      // Arrow FROM the dependent task → TO the dependency task (arrowhead at dependency)
+      const x1 = dateToPixelOffset(task.startDate, timelineStart);
+      const y1 = taskIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
+      const x2 = dateToPixelOffset(depTask.startDate, timelineStart) + depTask.duration * PIXELS_PER_DAY;
+      const y2 = depIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
 
-      arrows.push({ id: `${depId}-${task.id}`, x1, y1, x2, y2 });
+      const depStatus = statuses.find(s => s.id === depTask.statusId);
+      const done = depStatus?.name === 'הושלם';
+
+      arrows.push({ id: `${task.id}-${depId}`, x1, y1, x2, y2, done });
     });
   });
 
@@ -45,21 +52,27 @@ export function DependencyArrows({ tasks, timelineStart }: Props) {
       }}
     >
       <defs>
-        <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L6,3 z" fill="rgba(255,255,255,0.25)" />
+        <marker id="arr-blocked" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#f97316" />
+        </marker>
+        <marker id="arr-done" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#22c55e" />
         </marker>
       </defs>
-      {arrows.map(({ id, x1, y1, x2, y2 }) => {
-        const midX = x1 + Math.max(16, (x2 - x1) / 2);
+      {arrows.map(({ id, x1, y1, x2, y2, done }) => {
+        const color = done ? '#22c55e' : '#f97316';
+        const markerId = done ? 'arr-done' : 'arr-blocked';
+        const midX = x2 + Math.max(16, (x1 - x2) / 2);
         return (
           <path
             key={id}
             d={`M${x1} ${y1} L${midX} ${y1} L${midX} ${y2} L${x2} ${y2}`}
             fill="none"
-            stroke="rgba(255,255,255,0.18)"
+            stroke={color}
+            strokeOpacity={0.5}
             strokeWidth={1.5}
             strokeDasharray="4 3"
-            markerEnd="url(#arr)"
+            markerEnd={`url(#${markerId})`}
           />
         );
       })}

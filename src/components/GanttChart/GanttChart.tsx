@@ -6,7 +6,7 @@ import {
   dateToPixelOffset, pixelOffsetToDate, isWeekend, isSameDay,
   formatDayLabel, formatMonthLabel,
 } from '../../utils/dateUtils';
-import { useProjectStore, useSortedFilteredTasks } from '../../store/useProjectStore';
+import { useProjectStore, useSortedFilteredTasks, useActiveProject } from '../../store/useProjectStore';
 import { DependencyArrows } from './DependencyArrows';
 import { addDays, parseISO, format, startOfDay, differenceInDays } from 'date-fns';
 import styles from './GanttChart.module.css';
@@ -34,6 +34,22 @@ interface PreviewState {
 export function GanttChart() {
   const { updateTask, selectTask, selectedTaskId, statuses, colorMode } = useProjectStore();
   const tasks = useSortedFilteredTasks();
+  const project = useActiveProject();
+  const allTasks = project?.tasks ?? [];
+
+  function isBlocked(task: Task): boolean {
+    if (!task.dependencies.length) return false;
+    return task.dependencies.some(depId => {
+      const dep = allTasks.find(t => t.id === depId);
+      if (!dep) return false;
+      const depStatus = statuses.find((s: { id: string; name: string }) => s.id === dep.statusId);
+      return depStatus?.name !== 'הושלם';
+    });
+  }
+
+  function isKeyTask(task: Task): boolean {
+    return allTasks.some(t => t.id !== task.id && t.dependencies.includes(task.id));
+  }
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
@@ -259,6 +275,8 @@ export function GanttChart() {
               />
 
               <span className={styles.barLabel}>
+                {isBlocked(task) && <span title="חסומה">🔒</span>}
+                {isKeyTask(task) && <span title="משימות אחרות מחכות לה">🔑</span>}
                 #{task.number} {task.name}
               </span>
 

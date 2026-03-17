@@ -33,7 +33,7 @@ function ColorPalette({ value, onChange }: { value: string; onChange: (c: string
 }
 
 export function TaskEditPanel() {
-  const { updateTask, deleteTask, selectTask, statuses } = useProjectStore();
+  const { updateTask, selectTask, statuses } = useProjectStore();
   const project = useActiveProject();
   const selectedTask = useSelectedTask();
   const knownAssignees = useAllAssignees();
@@ -158,21 +158,21 @@ export function TaskEditPanel() {
   }
 
   // ── Deps ────────────────────────────────────────────────────────────────────
-  function toggleDep(taskId: string) {
-    const next = dependencies.includes(taskId)
-      ? dependencies.filter(d => d !== taskId)
-      : [...dependencies, taskId];
+  function addDep(taskId: string) {
+    if (dependencies.includes(taskId)) return;
+    const next = [...dependencies, taskId];
     setDeps(next);
     save({ dependencies: next });
   }
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
-  function handleDelete() {
-    if (!selectedTask) return;
-    if (confirm(`למחוק את המשימה "${selectedTask.name || '#' + selectedTask.number}"?`)) {
-      deleteTask(selectedTask.id);
-    }
+  function removeDep(taskId: string) {
+    const next = dependencies.filter((d: string) => d !== taskId);
+    setDeps(next);
+    save({ dependencies: next });
   }
+
+  // tasks that depend on this task (reverse dependencies) — read from project
+  const dependentOnMe = otherTasks.filter(t => t.dependencies.includes(selectedTask.id));
 
   const createdAtFormatted = selectedTask.createdAt
     ? format(parseISO(selectedTask.createdAt), 'dd.MM.yyyy HH:mm')
@@ -336,24 +336,59 @@ export function TaskEditPanel() {
             </div>
           </div>
 
-          {/* Dependencies */}
+          {/* Dependencies — תלויה במשימות */}
           {otherTasks.length > 0 && (
             <div className={styles.field}>
-              <label className={styles.label}>תלויות</label>
-              <div className={styles.depList}>
-                {otherTasks.map(t => {
+              <label className={styles.label}>תלויה במשימות</label>
+
+              {/* Selected deps as tags */}
+              <div className={styles.depTags}>
+                {dependencies.map((depId: string) => {
+                  const t = otherTasks.find(x => x.id === depId);
+                  if (!t) return null;
                   const st = statuses.find(s => s.id === t.statusId);
                   return (
-                    <label key={t.id} className={styles.depItem}>
-                      <input
-                        type="checkbox"
-                        checked={dependencies.includes(t.id)}
-                        onChange={() => toggleDep(t.id)}
-                        className={styles.checkbox}
-                      />
+                    <span key={depId} className={styles.depTag}>
                       <span className={styles.depDot} style={{ background: st?.color ?? '#ccc' }} />
-                      <span className={styles.depName}>#{t.number} {t.name || 'ללא שם'}</span>
-                    </label>
+                      #{t.number} {t.name || 'ללא שם'}
+                      <button className={styles.removeTag} onClick={() => removeDep(depId)}>×</button>
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Dropdown to add */}
+              {otherTasks.filter(t => !dependencies.includes(t.id)).length > 0 && (
+                <select
+                  className={styles.depSelect}
+                  value=""
+                  onChange={(e: { target: { value: string } }) => { if (e.target.value) addDep(e.target.value); }}
+                >
+                  <option value="">+ הוסף תלות...</option>
+                  {otherTasks
+                    .filter(t => !dependencies.includes(t.id))
+                    .map(t => (
+                      <option key={t.id} value={t.id}>
+                        #{t.number} {t.name || 'ללא שם'}
+                      </option>
+                    ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* Reverse dependencies — משימות שתלויות בי */}
+          {dependentOnMe.length > 0 && (
+            <div className={styles.field}>
+              <label className={styles.label}>משימות שתלויות בי</label>
+              <div className={styles.depTags}>
+                {dependentOnMe.map(t => {
+                  const st = statuses.find(s => s.id === t.statusId);
+                  return (
+                    <span key={t.id} className={`${styles.depTag} ${styles.depTagReadonly}`}>
+                      <span className={styles.depDot} style={{ background: st?.color ?? '#ccc' }} />
+                      #{t.number} {t.name || 'ללא שם'}
+                    </span>
                   );
                 })}
               </div>
@@ -369,7 +404,6 @@ export function TaskEditPanel() {
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.deleteBtn} onClick={handleDelete}>🗑 מחק</button>
           <button
             className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
             onClick={() => save()}

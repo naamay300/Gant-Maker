@@ -1,14 +1,16 @@
 import { useRef, useState } from 'react';
-import { Task, SortField, SortDirection } from '../../types';
-import { useProjectStore, useSortedFilteredTasks } from '../../store/useProjectStore';
+import { Task, SortField } from '../../types';
+import { useProjectStore, useSortedFilteredTasks, useActiveProject } from '../../store/useProjectStore';
 import styles from './TaskList.module.css';
 
 const ROW_HEIGHT = 48;
 
 const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: 'manual',   label: 'סדר ידני' },
-  { value: 'assignee', label: 'אחראי' },
-  { value: 'status',   label: 'סטטוס' },
+  { value: 'manual',    label: 'מספר משימה' },
+  { value: 'status',    label: 'סטטוס' },
+  { value: 'assignee',  label: 'אחראי' },
+  { value: 'startDate', label: 'תאריך התחלה' },
+  { value: 'endDate',   label: 'תאריך סיום' },
 ];
 
 interface Props {
@@ -17,23 +19,42 @@ interface Props {
 }
 
 export function TaskList({ ganttScrollRef }: Props) {
-  const { selectTask, selectedTaskId, sortField, sortDirection, setSortField, setSortDirection, reorderTasks, statuses, addTask } = useProjectStore();
-  const [showSort, setShowSort] = useState(false);
+  const {
+    selectTask, selectedTaskId, sortField, sortDirection,
+    setSortField, setSortDirection, reorderTasks, statuses, addTask, deleteTask,
+  } = useProjectStore();
+  const project = useActiveProject();
   const tasks = useSortedFilteredTasks();
+  const allTasks = project?.tasks ?? [];
 
-  // ── Vertical drag reorder ──────────────────────────────────────────────────
+  const [showSort, setShowSort] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const dragStartY = useRef(0);
   const dragOrigIndex = useRef(0);
 
+  // ── Dependency helpers ────────────────────────────────────────────────────
+  function isBlocked(task: Task): boolean {
+    if (!task.dependencies.length) return false;
+    return task.dependencies.some(depId => {
+      const dep = allTasks.find(t => t.id === depId);
+      if (!dep) return false;
+      const depStatus = statuses.find(s => s.id === dep.statusId);
+      return depStatus?.name !== 'הושלם';
+    });
+  }
+
+  function isKeyTask(task: Task): boolean {
+    return allTasks.some(t => t.id !== task.id && t.dependencies.includes(task.id));
+  }
+
+  // ── Drag to reorder ───────────────────────────────────────────────────────
   function onHandleMouseDown(e: React.MouseEvent, task: Task) {
-    if (sortField !== 'manual') return;
     e.preventDefault();
     e.stopPropagation();
+    if (sortField !== 'manual') setSortField('manual');
     setDraggingId(task.id);
-    dragStartY.current = e.clientY;
     dragOrigIndex.current = tasks.findIndex(t => t.id === task.id);
 
     function onMove(ev: MouseEvent) {
@@ -63,12 +84,14 @@ export function TaskList({ ganttScrollRef }: Props) {
     document.addEventListener('mouseup', onUp);
   }
 
-  // ── Sync scroll with gantt ─────────────────────────────────────────────────
+  // ── Sync scroll ───────────────────────────────────────────────────────────
   function syncScroll(e: React.UIEvent<HTMLDivElement>) {
     if (ganttScrollRef.current) {
       ganttScrollRef.current.scrollTop = e.currentTarget.scrollTop;
     }
   }
+
+  const confirmTask = confirmDeleteId ? allTasks.find(t => t.id === confirmDeleteId) : null;
 
   return (
     <div className={styles.container}>
@@ -79,13 +102,14 @@ export function TaskList({ ganttScrollRef }: Props) {
         <div className={styles.colName}>משימה</div>
         <div className={styles.colAssignee}>אחראי</div>
         <div className={styles.colStatus}>סטטוס</div>
+        <div className={styles.colDep} />
+        <div className={styles.colDelete} />
         <div className={styles.sortWrap}>
           <button
             className={`${styles.sortBtn} ${sortField !== 'manual' ? styles.sortBtnActive : ''}`}
             onClick={() => setShowSort(v => !v)}
-            title="מיין לפי"
           >
-            ↕{sortField !== 'manual' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+            מיין ▾
           </button>
           {showSort && (
             <>
@@ -123,6 +147,8 @@ export function TaskList({ ganttScrollRef }: Props) {
           const status = statuses.find(s => s.id === task.statusId);
           const isDragging = draggingId === task.id;
           const isDropTarget = dragOverIndex === i && draggingId !== null;
+          const blocked = isBlocked(task);
+          const keyTask = isKeyTask(task);
 
           return (
             <div key={task.id} className={styles.rowWrapper}>
@@ -131,66 +157,55 @@ export function TaskList({ ganttScrollRef }: Props) {
                 className={`${styles.row} ${task.id === selectedTaskId ? styles.selected : ''} ${isDragging ? styles.draggingRow : ''}`}
                 onClick={() => selectTask(task.id === selectedTaskId ? null : task.id)}
               >
-                {/* Drag handle */}
                 <div
-                  className={`${styles.colHandle} ${sortField !== 'manual' ? styles.handleDisabled : ''}`}
+                  className={styles.colHandle}
                   onMouseDown={(e) => onHandleMouseDown(e, task)}
-                  title={sortField !== 'manual' ? 'השבת מיון ידני כדי לסדר' : 'גרור לשינוי סדר'}
-                >
-                  ⋮⋮
-                </div>
+                  title="גרור לשינוי סדר"
+                >⋮⋮</div>
 
-                {/* Number */}
                 <div className={styles.colNum}>
                   <span className={styles.taskNum}>#{task.number}</span>
                 </div>
 
-                {/* Name */}
                 <div className={styles.colName}>
                   <span className={styles.taskName}>{task.name || <em className={styles.unnamed}>ללא שם</em>}</span>
-                  {task.dependencies.length > 0 && (
-                    <span className={styles.depBadge} title={`תלוי ב-${task.dependencies.length} משימות`}>
-                      ⬡{task.dependencies.length}
-                    </span>
-                  )}
                 </div>
 
-                {/* Assignees */}
                 <div className={styles.colAssignee}>
                   <div className={styles.assigneeDots}>
                     {task.assignees.slice(0, 3).map(a => (
-                      <span
-                        key={a.name}
-                        className={styles.assigneeDot}
-                        style={{ background: a.color }}
-                        title={a.name}
-                      />
+                      <span key={a.name} className={styles.assigneeDot} style={{ background: a.color }} title={a.name} />
                     ))}
-                    {task.assignees.length > 3 && (
-                      <span className={styles.moreAssignees}>+{task.assignees.length - 3}</span>
-                    )}
+                    {task.assignees.length > 3 && <span className={styles.moreAssignees}>+{task.assignees.length - 3}</span>}
                   </div>
                 </div>
 
-                {/* Status */}
                 <div className={styles.colStatus}>
                   {status && (
-                    <span
-                      className={styles.statusBadge}
-                      style={{ color: status.color, borderColor: status.color + '55' }}
-                    >
+                    <span className={styles.statusBadge} style={{ color: status.color, borderColor: status.color + '55' }}>
                       {status.name}
                     </span>
                   )}
+                </div>
+
+                <div className={styles.colDep}>
+                  {blocked && <span className={styles.depIcon} title="חסומה — מחכה למשימה אחרת">🔒</span>}
+                  {keyTask && <span className={styles.depIcon} title="משימות אחרות מחכות לה">🔑</span>}
+                </div>
+
+                <div className={styles.colDelete}>
+                  <button
+                    className={styles.deleteXBtn}
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(task.id); }}
+                    title="מחק משימה"
+                  >✕</button>
                 </div>
               </div>
             </div>
           );
         })}
 
-        {tasks.length === 0 && (
-          <div className={styles.empty}>אין משימות{(useProjectStore.getState().filters.statusIds.length > 0 || useProjectStore.getState().filters.assignees.length > 0) ? ' (יש פילטרים פעילים)' : ''}</div>
-        )}
+        {tasks.length === 0 && <div className={styles.empty}>אין משימות</div>}
 
         <button
           className={styles.addTaskBtn}
@@ -199,6 +214,25 @@ export function TaskList({ ganttScrollRef }: Props) {
           + הוסף משימה
         </button>
       </div>
+
+      {/* Delete confirmation */}
+      {confirmDeleteId && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmBox}>
+            <p className={styles.confirmText}>
+              האם אתה בטוח שברצונך למחוק את המשימה<br />
+              <strong>"{confirmTask?.name || '#' + confirmTask?.number}"</strong>?
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmDelete}
+                onClick={() => { deleteTask(confirmDeleteId); setConfirmDeleteId(null); }}
+              >מחק</button>
+              <button className={styles.confirmCancel} onClick={() => setConfirmDeleteId(null)}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -242,6 +242,107 @@
 .sortItem:hover { background: var(--bg-hover); color: var(--text-primary); }
 .sortItemActive { color: var(--accent); background: rgba(108,99,255,0.08); }
 
+.colDep {
+  width: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.colDelete {
+  width: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.depIcon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.deleteXBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.12s, color 0.12s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.row:hover .deleteXBtn { opacity: 1; }
+.deleteXBtn:hover { background: rgba(220, 60, 60, 0.15); color: #e05555; }
+
+/* ── Delete confirmation ── */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.confirmBox {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+  min-width: 280px;
+  max-width: 360px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.confirmText {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.confirmDelete {
+  padding: 8px 20px;
+  border-radius: 7px;
+  background: #dc3545;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirmDelete:hover { background: #c82333; }
+
+.confirmCancel {
+  padding: 8px 20px;
+  border-radius: 7px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirmCancel:hover { background: var(--bg-hover); color: var(--text-primary); }
+
 .addTaskBtn {
   display: flex;
   align-items: center;

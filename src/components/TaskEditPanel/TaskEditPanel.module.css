@@ -294,17 +294,44 @@
 .addStatusInline:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Dependencies ── */
-.depList { display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto; }
-
-.depItem {
-  display: flex; align-items: center; gap: 7px;
-  cursor: pointer; padding: 3px 0; font-size: 12px; color: var(--text-secondary);
-}
-.depItem:hover { color: var(--text-primary); }
-
-.checkbox { accent-color: var(--accent); flex-shrink: 0; }
 .depDot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.depName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.depTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.depTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.depTagReadonly {
+  opacity: 0.8;
+  cursor: default;
+}
+
+.depSelect {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.depSelect:focus { outline: none; border-color: var(--accent); }
 
 /* ── Created at ── */
 .createdAt {
