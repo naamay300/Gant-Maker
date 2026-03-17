@@ -54,45 +54,21 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!account) return;
-    Promise.all([loadMembers(), loadProjects()]).then(() => setWsLoading(false));
+    loadProfileData();
   }, [account?.id]);
 
-  async function loadMembers() {
-    if (!account) return;
-    const { data } = await supabase
-      .from('account_members')
-      .select('user_id, role, profiles(email, full_name)')
-      .eq('account_id', account.id);
-    setMembers(
-      (data ?? []).map((m: { user_id: string; role: string; profiles: unknown }) => {
-        const p = m.profiles as { email: string; full_name: string } | null;
-        return { userId: m.user_id, email: p?.email ?? '', fullName: p?.full_name ?? '', role: m.role };
-      })
-    );
-  }
-
-  async function loadProjects() {
-    if (!account) return;
-    const { data } = await supabase
-      .from('projects')
-      .select('id, name, tasks(id), project_members(user_id, profiles(email, full_name))')
-      .eq('account_id', account.id);
-    setProjects(
-      (data ?? []).map((p: { id: string; name: string; tasks: unknown; project_members: unknown }) => {
-        const tasks = (p.tasks as { id: string }[]) ?? [];
-        const pm = (p.project_members as { user_id: string; profiles: { email: string; full_name: string } | null }[]) ?? [];
-        return {
-          id: p.id,
-          name: p.name,
-          taskCount: tasks.length,
-          members: pm.map((m: { user_id: string; profiles: { email: string; full_name: string } | null }) => ({
-            userId: m.user_id,
-            email: m.profiles?.email ?? '',
-            fullName: m.profiles?.full_name ?? '',
-          })),
-        };
-      })
-    );
+  async function loadProfileData() {
+    setWsLoading(true);
+    const { data } = await supabase.rpc('get_profile_data');
+    if (data) {
+      setMembers((data.members ?? []).map((m: { userId: string; role: string; email: string; fullName: string }) => ({
+        userId: m.userId, role: m.role, email: m.email, fullName: m.fullName,
+      })));
+      setProjects((data.projects ?? []).map((p: { id: string; name: string; taskCount: number; members: ProjectMember[] }) => ({
+        id: p.id, name: p.name, taskCount: p.taskCount, members: p.members ?? [],
+      })));
+    }
+    setWsLoading(false);
   }
 
   async function handleSave() {
@@ -125,7 +101,7 @@ export function ProfilePage() {
       if (!res.ok) throw new Error(json.error ?? 'שגיאה');
       setInviteMsg({ type: 'ok', text: 'הזמנה נשלחה במייל' });
       setInviteEmail('');
-      await loadMembers();
+      await loadProfileData();
     } catch (err) {
       setInviteMsg({ type: 'err', text: (err as Error).message });
     } finally {
@@ -136,13 +112,13 @@ export function ProfilePage() {
   async function addMemberToProject(projectId: string, userId: string) {
     await supabase.from('project_members').insert({ project_id: projectId, user_id: userId });
     setAddingToProject(null);
-    await loadProjects();
+    await loadProfileData();
   }
 
   async function removeMemberFromProject(projectId: string, userId: string) {
     await supabase.from('project_members').delete()
       .eq('project_id', projectId).eq('user_id', userId);
-    await loadProjects();
+    await loadProfileData();
   }
 
   function getMembersNotInProject(project: Project) {
