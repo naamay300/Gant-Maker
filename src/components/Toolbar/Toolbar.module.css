@@ -1,0 +1,233 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 44px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  position: relative;
+  z-index: 50;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── Navigation ── */
+.navBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+.navBtn:hover { background: var(--bg-hover); }
+
+.todayBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--today-line);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+.todayBtn:hover { background: var(--bg-hover); }
+
+/* ── Dropdowns ── */
+.dropdownWrap {
+  position: relative;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.filterBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.filterBtn.active { border-color: var(--accent); color: var(--accent); }
+
+.badge {
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow { font-size: 9px; opacity: 0.6; }
+.sortArrow { font-size: 11px; }
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 160px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 200;
+  overflow: hidden;
+  animation: fadeIn 0.1s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: background 0.1s;
+}
+.checkItem:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.checkbox { accent-color: var(--accent); flex-shrink: 0; }
+
+.checkDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sortItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: none;
+  text-align: right;
+  transition: background 0.1s;
+}
+.sortItem:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sortItem.sortActive { color: var(--accent); background: rgba(108,99,255,0.08); }
+
+.clearBtn {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 11px;
+  color: var(--today-line);
+  background: none;
+  border-top: 1px solid var(--border);
+  text-align: right;
+  transition: background 0.1s;
+}
+.clearBtn:hover { background: rgba(255,92,138,0.08); }
+
+.clearAllBtn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255,92,138,0.1);
+  border: 1px solid rgba(255,92,138,0.3);
+  color: var(--today-line);
+  font-size: 11px;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.clearAllBtn:hover { background: rgba(255,92,138,0.2); }
+
+.emptyMsg {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Color toggle ── */
+.colorToggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.toggleBtn {
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.toggleBtn + .toggleBtn { border-right: 1px solid var(--border); }
+.toggleBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.toggleBtn.toggleActive { background: var(--accent); color: white; }
+
+/* ── Buttons ── */
+.statusMgrBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: all 0.1s;
+}
+.statusMgrBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.addTaskBtn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.1s;
+  margin-right: auto;
+}
+.addTaskBtn:hover { background: var(--accent-hover); }
+
+/* Backdrop to close dropdowns */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}

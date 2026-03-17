@@ -1,0 +1,160 @@
+.wrapper {
+  min-width: 100%;
+  min-height: 100%;
+  position: relative;
+  user-select: none;
+}
+
+/* ── Header ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border);
+}
+
+.monthRow {
+  display: flex;
+  height: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.monthCell {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dayRow { display: flex; height: 20px; }
+
+.dayCell {
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dayCell.weekend { background: rgba(255,255,255,0.02); }
+.dayCell.todayCell { color: var(--today-line); font-weight: 700; }
+
+/* ── Grid ── */
+.grid {
+  position: relative;
+  padding-bottom: 60px;
+  overflow: visible;
+}
+
+.col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid rgba(255,255,255,0.03);
+  pointer-events: none;
+}
+.weekendCol { background: rgba(255,255,255,0.012); }
+
+.rowBg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+.rowBg.selectedRow { background: rgba(108,99,255,0.05); }
+
+/* ── Today line ── */
+.todayLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--today-line);
+  z-index: 5;
+  pointer-events: none;
+}
+.todayLabel {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--today-line);
+  white-space: nowrap;
+  background: var(--bg-secondary);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ── Task bars ── */
+.bar {
+  position: absolute;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  cursor: grab;
+  z-index: 4;
+  transition: box-shadow 0.12s, filter 0.12s;
+  overflow: visible;
+}
+
+.bar:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.bar.dragging {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  filter: brightness(1.2);
+  z-index: 10;
+  cursor: grabbing;
+}
+
+/* ── Resize handles ── */
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 6;
+}
+.resizeHandle:hover { background: rgba(255,255,255,0.25); border-radius: 6px; }
+
+.resizeLeft {
+  left: 0;
+  border-radius: 6px 0 0 6px;
+  background: rgba(0,0,0,0.15);
+}
+
+.resizeRight {
+  right: 0;
+  border-radius: 0 6px 6px 0;
+  background: rgba(0,0,0,0.15);
+}
+
+.barLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  padding: 0 10px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  pointer-events: none;
+}

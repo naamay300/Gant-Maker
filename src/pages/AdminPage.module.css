@@ -1,0 +1,196 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 40px 24px;
+  overflow-y: auto;
+}
+
+.content {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.backBtn {
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  transition: color 0.1s;
+}
+
+.backBtn:hover { color: var(--text-primary); }
+
+.pageTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sectionSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.loading {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px;
+}
+
+.memberList { display: flex; flex-direction: column; gap: 8px; }
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+}
+
+.memberAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.memberInfo { flex: 1; min-width: 0; }
+
+.memberName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memberEmail {
+  font-size: 11px;
+  color: var(--text-muted);
+  direction: ltr;
+}
+
+.roleTag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.removeBtn {
+  background: none;
+  color: var(--today-line);
+  font-size: 11px;
+  opacity: 0.7;
+  flex-shrink: 0;
+  transition: opacity 0.1s;
+}
+
+.removeBtn:hover { opacity: 1; }
+
+.inviteForm {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus { border-color: var(--accent); }
+
+.select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.inviteBtn {
+  background: var(--accent);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.inviteBtn:hover { background: var(--accent-hover); }
+
+.inviteMsg {
+  font-size: 12px;
+  color: var(--status-done);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.projectList { display: flex; flex-direction: column; gap: 6px; }
+
+.projectRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 7px;
+}
+
+.projectName { font-size: 13px; color: var(--text-primary); }
+
+.projectMeta { font-size: 11px; color: var(--text-muted); }
+
+.empty { font-size: 13px; color: var(--text-muted); }

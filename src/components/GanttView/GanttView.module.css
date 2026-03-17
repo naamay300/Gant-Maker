@@ -1,0 +1,48 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.taskListPane {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  z-index: 2;
+  min-width: 200px;
+  max-width: 600px;
+}
+
+.divider {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--border);
+  cursor: ew-resize;
+  transition: background 0.15s;
+  z-index: 3;
+}
+.divider:hover { background: var(--accent); }
+
+.ganttPane {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 16px;
+}
