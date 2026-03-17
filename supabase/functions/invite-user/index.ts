@@ -18,14 +18,10 @@ serve(async (req) => {
     );
 
     // Verify caller permissions
-    const authHeader = req.headers.get('Authorization')!;
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
+    if (userError || !user) throw new Error('Unauthorized');
 
     const { data: caller } = await adminClient
       .from('account_members')
