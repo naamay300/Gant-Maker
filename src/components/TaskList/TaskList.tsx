@@ -102,8 +102,8 @@ export function TaskList({ ganttScrollRef }: Props) {
         <div className={styles.colNum}>#</div>
         <div className={styles.colName}>משימה</div>
         <div className={styles.colDate}>תאריך</div>
-        <div className={styles.colAssignee}>אחראי</div>
         <div className={styles.colStatus}>סטטוס</div>
+        <div className={styles.colAssignee}>אחראי</div>
         <div className={styles.colDep} />
         <div className={styles.colDelete} />
         <div className={styles.sortWrap}>
@@ -179,25 +179,29 @@ export function TaskList({ ganttScrollRef }: Props) {
                   </span>
                 </div>
 
-                <div className={styles.colAssignee}>
-                  {task.assignees.length === 0 ? (
-                    <span className={styles.noAssignee}>—</span>
-                  ) : (
-                    <div className={styles.assigneeCell}>
-                      <span className={styles.assigneeDot} style={{ background: task.assignees[0].color }} />
-                      <span className={styles.assigneeName}>{task.assignees[0].name}</span>
-                      {task.assignees.length > 1 && (
-                        <span className={styles.moreAssignees}>+{task.assignees.length - 1}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 <div className={styles.colStatus}>
                   {status && (
                     <span className={styles.statusBadge} style={{ color: status.color, borderColor: status.color + '55' }}>
                       {status.name}
                     </span>
+                  )}
+                </div>
+
+                <div className={styles.colAssignee}>
+                  {task.assignees.length === 0 ? (
+                    <span className={styles.noAssignee}>—</span>
+                  ) : (
+                    <div className={styles.assigneeCell}>
+                      <span
+                        className={styles.assigneeBadge}
+                        style={{ color: task.assignees[0].color, borderColor: task.assignees[0].color + '55', background: task.assignees[0].color + '20' }}
+                      >
+                        {task.assignees[0].name}
+                      </span>
+                      {task.assignees.length > 1 && (
+                        <span className={styles.moreAssignees}>+{task.assignees.length - 1}</span>
+                      )}
+                    </div>
                   )}
                 </div>
 

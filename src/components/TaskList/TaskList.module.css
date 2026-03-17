@@ -69,18 +69,22 @@
 .assigneeCell {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   overflow: hidden;
   width: 100%;
 }
 
-.assigneeName {
-  font-size: 11px;
-  color: var(--text-secondary);
+.assigneeBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
+  max-width: 100%;
+  display: inline-block;
 }
 
 .noAssignee {
