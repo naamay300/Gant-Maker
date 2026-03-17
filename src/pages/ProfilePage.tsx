@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import styles from './ProfilePage.module.css';
 
 export function ProfilePage() {
-  const { profile, account, updateProfile, signOut } = useAuth();
+  const { profile, account, updateProfile, refreshAccount, signOut } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
+  const [accountName, setAccountName] = useState(account?.name ?? '');
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const canEditAccount = account?.role === 'owner' || account?.role === 'admin';
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     await updateProfile({ fullName: fullName.trim() });
+    if (canEditAccount && accountName.trim() && accountName.trim() !== account?.name) {
+      await supabase.from('accounts').update({ name: accountName.trim() }).eq('id', account!.id);
+      await refreshAccount();
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setLoading(false);
@@ -59,12 +67,13 @@ export function ProfilePage() {
 
           {account && (
             <div className={styles.field}>
-              <label className={styles.label}>סביבת עבודה</label>
+              <label className={styles.label}>סביבת עבודה {canEditAccount && <span className={styles.roleTag}>{account.role}</span>}</label>
               <input
                 className={styles.input}
                 type="text"
-                value={account.name}
-                disabled
+                value={accountName}
+                onChange={e => setAccountName(e.target.value)}
+                disabled={!canEditAccount}
               />
             </div>
           )}

@@ -16,13 +16,14 @@ export function AccountSetupPage() {
     setLoading(true);
     setError('');
 
-    const { error: err } = await supabase.rpc('create_account', { p_name: trimmed });
-    if (err) {
-      setError(err.message || 'שגיאה ביצירת סביבת העבודה. נסה שוב.');
+    const { data: accountId, error: err } = await supabase.rpc('create_account', { p_name: trimmed });
+    if (err || !accountId) {
+      setError(err?.message || 'שגיאה ביצירת סביבת העבודה. נסה שוב.');
       setLoading(false);
       return;
     }
 
+    await supabase.rpc('create_project', { p_account_id: accountId, p_name: 'פרויקט ראשון' });
     window.location.href = '/app';
   }
 
@@ -31,7 +32,7 @@ export function AccountSetupPage() {
       <div className={styles.card}>
         <div className={styles.logo}>
           <span>📋</span>
-          <h1 className={styles.title}>ברוך הבא ל-Gantt Manager</h1>
+          <h1 className={styles.title}>ברוך הבא ל-Gant Maker</h1>
         </div>
 
         <p className={styles.subtitle}>

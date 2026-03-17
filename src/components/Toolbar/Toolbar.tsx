@@ -2,6 +2,7 @@ import { useRef, useState, RefObject } from 'react';
 import { useProjectStore, useSortedFilteredTasks, useAllAssignees } from '../../store/useProjectStore';
 import { StatusManager } from '../StatusManager/StatusManager';
 import { PIXELS_PER_DAY, getTimelineStartDate, dateToPixelOffset } from '../../utils/dateUtils';
+import { addDays } from 'date-fns';
 import { SortField, SortDirection } from '../../types';
 import styles from './Toolbar.module.css';
 
@@ -39,7 +40,7 @@ export function Toolbar({ ganttScrollRef }: Props) {
   // ── Navigation ──────────────────────────────────────────────────────────────
   function scrollToToday() {
     if (!ganttScrollRef.current) return;
-    const timelineStart = getTimelineStartDate(tasks);
+    const timelineStart = addDays(getTimelineStartDate(tasks), -30);
     const todayOffset = dateToPixelOffset(
       new Date().toISOString().split('T')[0],
       timelineStart

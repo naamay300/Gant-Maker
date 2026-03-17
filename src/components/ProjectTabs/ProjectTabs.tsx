@@ -41,7 +41,7 @@ export function ProjectTabs() {
     <header className={styles.header}>
       <div className={styles.logo}>
         <span className={styles.logoIcon}>📋</span>
-        <span className={styles.logoText}>Gantt Manager</span>
+        <span className={styles.logoText}>Gant Maker</span>
         {account && <span className={styles.accountName}>{account.name}</span>}
       </div>
 

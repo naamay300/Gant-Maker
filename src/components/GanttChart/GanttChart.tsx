@@ -8,7 +8,7 @@ import {
 } from '../../utils/dateUtils';
 import { useProjectStore, useSortedFilteredTasks } from '../../store/useProjectStore';
 import { DependencyArrows } from './DependencyArrows';
-import { addDays, parseISO, format } from 'date-fns';
+import { addDays, parseISO, format, startOfDay, differenceInDays } from 'date-fns';
 import styles from './GanttChart.module.css';
 
 const MIN_DURATION = 1;
@@ -37,7 +37,7 @@ export function GanttChart() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => startOfDay(new Date()), []);
 
   // ── Timeline bounds ─────────────────────────────────────────────────────────
   const timelineStart = useMemo(() => {
@@ -58,7 +58,7 @@ export function GanttChart() {
   const totalWidth = days.length * PIXELS_PER_DAY;
 
   const todayOffset = useMemo(
-    () => dateToPixelOffset(format(today, 'yyyy-MM-dd'), timelineStart),
+    () => differenceInDays(today, startOfDay(timelineStart)) * PIXELS_PER_DAY,
     [today, timelineStart]
   );
 

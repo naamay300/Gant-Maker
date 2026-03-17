@@ -348,3 +348,62 @@
   transition: background 0.15s;
 }
 .saveBtn:hover { background: var(--accent-hover); }
+.saveBtnSaved {
+  background: #43b89c !important;
+}
+.saveBtnSaved:hover { background: #37a085 !important; }
+
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px;
+  width: 148px;
+}
+
+.paletteColor {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+}
+.paletteColor:hover { transform: scale(1.2); }
+.paletteSelected { border-color: white; box-shadow: 0 0 0 2px #6c63ff; }
+
+.palettePopup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  margin-top: 4px;
+}
+
+.tagDotBtn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.tagDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.assigneeColorWrap {
+  position: relative;
+  flex-shrink: 0;
+}

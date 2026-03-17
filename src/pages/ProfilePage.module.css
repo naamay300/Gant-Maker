@@ -109,6 +109,16 @@
 .saveBtn:hover:not(:disabled) { background: var(--accent-hover); }
 .saveBtn:disabled { opacity: 0.5; }
 
+.roleTag {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--accent);
+  color: white;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-right: 6px;
+}
+
 .logoutBtn {
   flex: 1;
   background: var(--bg-tertiary);

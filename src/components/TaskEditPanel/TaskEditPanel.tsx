@@ -5,13 +5,31 @@ import { format, parseISO } from 'date-fns';
 import { StatusManager } from '../StatusManager/StatusManager';
 import styles from './TaskEditPanel.module.css';
 
-const PRESET_COLORS = [
+const PALETTE = [
   '#6C63FF', '#FF6584', '#43B89C', '#F7971E', '#2193b0',
   '#c471ed', '#f64f59', '#12c2e9', '#f79d00', '#64b3f4',
+  '#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#a29bfe',
+  '#00b894', '#fdcb6e', '#e17055', '#74b9ff', '#fd79a8',
 ];
 
 function pickColor(existing: string[]): string {
-  return PRESET_COLORS.find(c => !existing.includes(c)) ?? PRESET_COLORS[0];
+  return PALETTE.find(c => !existing.includes(c)) ?? PALETTE[0];
+}
+
+function ColorPalette({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  return (
+    <div className={styles.palette}>
+      {PALETTE.map(c => (
+        <button
+          key={c}
+          className={`${styles.paletteColor} ${value === c ? styles.paletteSelected : ''}`}
+          style={{ background: c }}
+          onClick={() => onChange(c)}
+          title={c}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function TaskEditPanel() {
@@ -26,11 +44,14 @@ export function TaskEditPanel() {
   const [duration, setDuration]     = useState(7);
   const [statusId, setStatusId]     = useState('');
   const [dependencies, setDeps]     = useState<string[]>([]);
+  const [saved, setSaved]           = useState(false);
+  const [editingColorFor, setEditingColorFor] = useState<string | null>(null);
 
   // New assignee input
   const [newAssignee, setNewAssignee] = useState('');
-  const [newAssigneeColor, setNewAssigneeColor] = useState(PRESET_COLORS[0]);
+  const [newAssigneeColor, setNewAssigneeColor] = useState(PALETTE[0]);
   const [showAssigneeAdd, setShowAssigneeAdd] = useState(false);
+  const [showNewColorPalette, setShowNewColorPalette] = useState(false);
   const [suggestions, setSuggestions] = useState<Assignee[]>([]);
 
   // New status inline
@@ -48,7 +69,7 @@ export function TaskEditPanel() {
       setDuration(selectedTask.duration);
       setStatusId(selectedTask.statusId);
       setDeps(selectedTask.dependencies);
-      // Auto-focus name if empty (new task)
+      setSaved(false);
       if (!selectedTask.name) setTimeout(() => nameRef.current?.focus(), 50);
     }
   }, [selectedTask?.id]);
@@ -56,12 +77,15 @@ export function TaskEditPanel() {
   if (!selectedTask || !project) return null;
   const otherTasks = project.tasks.filter(t => t.id !== selectedTask.id);
 
-  // ── Auto-save ───────────────────────────────────────────────────────────────
+  // ── Save ────────────────────────────────────────────────────────────────────
+  function markChanged() { setSaved(false); }
+
   function save(overrides?: Partial<typeof selectedTask>) {
     if (!selectedTask) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(() => {
-      updateTask(selectedTask.id, {
+    setSaved(false);
+    saveTimeout.current = setTimeout(async () => {
+      await updateTask(selectedTask.id, {
         name: (overrides?.name ?? name).trim() || selectedTask.name || 'משימה ללא שם',
         assignees: overrides?.assignees ?? assignees,
         startDate: overrides?.startDate ?? startDate,
@@ -69,12 +93,13 @@ export function TaskEditPanel() {
         statusId: overrides?.statusId ?? statusId,
         dependencies: overrides?.dependencies ?? dependencies,
       });
+      setSaved(true);
     }, 300);
   }
 
   // ── Assignees ───────────────────────────────────────────────────────────────
-  function removeAssignee(name: string) {
-    const next = assignees.filter(a => a.name !== name);
+  function removeAssignee(aName: string) {
+    const next = assignees.filter(a => a.name !== aName);
     setAssignees(next);
     save({ assignees: next });
   }
@@ -114,6 +139,7 @@ export function TaskEditPanel() {
     setNewAssignee('');
     setSuggestions([]);
     setShowAssigneeAdd(false);
+    setShowNewColorPalette(false);
     setNewAssigneeColor(pickColor(next.map(x => x.color)));
     save({ assignees: next });
   }
@@ -121,6 +147,7 @@ export function TaskEditPanel() {
   function updateAssigneeColor(aName: string, color: string) {
     const next = assignees.map(a => a.name === aName ? { ...a, color } : a);
     setAssignees(next);
+    setEditingColorFor(null);
     save({ assignees: next });
   }
 
@@ -171,7 +198,7 @@ export function TaskEditPanel() {
               ref={nameRef}
               className={styles.input}
               value={name}
-              onChange={e => { setName(e.target.value); save({ name: e.target.value }); }}
+              onChange={e => { setName(e.target.value); markChanged(); save({ name: e.target.value }); }}
               placeholder="שם המשימה..."
             />
           </div>
@@ -184,19 +211,22 @@ export function TaskEditPanel() {
             <div className={styles.assigneeTags}>
               {assignees.map(a => (
                 <span key={a.name} className={styles.assigneeTag} style={{ background: a.color + '30', borderColor: a.color + '80' }}>
-                  <input
-                    type="color"
-                    value={a.color}
-                    onChange={e => updateAssigneeColor(a.name, e.target.value)}
-                    className={styles.inlineColorPicker}
+                  <button
+                    className={styles.tagDot}
+                    style={{ background: a.color }}
+                    onClick={() => setEditingColorFor(editingColorFor === a.name ? null : a.name)}
                     title="שנה צבע"
                   />
-                  <span className={styles.tagDot} style={{ background: a.color }} />
                   <span className={styles.tagName}>{a.name}</span>
                   <button
                     className={styles.removeTag}
                     onClick={() => removeAssignee(a.name)}
                   >×</button>
+                  {editingColorFor === a.name && (
+                    <div className={styles.palettePopup}>
+                      <ColorPalette value={a.color} onChange={c => updateAssigneeColor(a.name, c)} />
+                    </div>
+                  )}
                 </span>
               ))}
 
@@ -210,12 +240,19 @@ export function TaskEditPanel() {
             {/* New assignee input */}
             {showAssigneeAdd && (
               <div className={styles.assigneeAddRow}>
-                <input
-                  type="color"
-                  value={newAssigneeColor}
-                  onChange={e => setNewAssigneeColor(e.target.value)}
-                  className={styles.colorInput}
-                />
+                <div className={styles.assigneeColorWrap}>
+                  <button
+                    className={styles.tagDotBtn}
+                    style={{ background: newAssigneeColor }}
+                    onClick={() => setShowNewColorPalette(v => !v)}
+                    title="בחר צבע"
+                  />
+                  {showNewColorPalette && (
+                    <div className={styles.palettePopup}>
+                      <ColorPalette value={newAssigneeColor} onChange={c => { setNewAssigneeColor(c); setShowNewColorPalette(false); }} />
+                    </div>
+                  )}
+                </div>
                 <div className={styles.assigneeInputWrap}>
                   <input
                     autoFocus
@@ -257,20 +294,20 @@ export function TaskEditPanel() {
                 className={styles.input}
                 type="date"
                 value={startDate}
-                onChange={e => { setStartDate(e.target.value); save({ startDate: e.target.value }); }}
+                onChange={e => { setStartDate(e.target.value); markChanged(); save({ startDate: e.target.value }); }}
               />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>משך (ימים)</label>
               <div className={styles.durationRow}>
-                <button className={styles.durationBtn} onClick={() => { const d = Math.max(1, duration - 1); setDuration(d); save({ duration: d }); }}>−</button>
+                <button className={styles.durationBtn} onClick={() => { const d = Math.max(1, duration - 1); setDuration(d); markChanged(); save({ duration: d }); }}>−</button>
                 <input
                   className={`${styles.input} ${styles.durationInput}`}
                   type="number" min={1}
                   value={duration}
-                  onChange={e => { const d = Number(e.target.value); setDuration(d); save({ duration: d }); }}
+                  onChange={e => { const d = Number(e.target.value); setDuration(d); markChanged(); save({ duration: d }); }}
                 />
-                <button className={styles.durationBtn} onClick={() => { const d = duration + 1; setDuration(d); save({ duration: d }); }}>+</button>
+                <button className={styles.durationBtn} onClick={() => { const d = duration + 1; setDuration(d); markChanged(); save({ duration: d }); }}>+</button>
               </div>
             </div>
           </div>
@@ -333,7 +370,12 @@ export function TaskEditPanel() {
 
         <div className={styles.footer}>
           <button className={styles.deleteBtn} onClick={handleDelete}>🗑 מחק</button>
-          <button className={styles.saveBtn} onClick={() => save()}>שמור</button>
+          <button
+            className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
+            onClick={() => save()}
+          >
+            {saved ? '✓ נשמר' : 'שמור'}
+          </button>
         </div>
       </div>
 
