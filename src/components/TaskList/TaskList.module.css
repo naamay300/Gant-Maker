@@ -19,6 +19,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   gap: 4px;
+  position: relative;
 }
 
 .colHandle {
@@ -186,9 +187,10 @@
 
 /* ── Sort ── */
 .sortWrap {
-  position: relative;
-  margin-right: auto;
-  flex-shrink: 0;
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .sortBtn {
