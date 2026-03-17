@@ -182,21 +182,10 @@ export const useProjectStore = create<ProjectStore>()(
       },
 
       loadProjectData: async (projectId: string) => {
-        const [{ data: statusData }, { data: taskData }] = await Promise.all([
-          supabase
-            .from('project_statuses')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('sort_order', { ascending: true }),
-          supabase
-            .from('tasks')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('task_order', { ascending: true }),
-        ]);
-
-        const statuses = (statusData ?? []).map(s => statusFromDB(s as Record<string, unknown>));
-        const tasks = (taskData ?? []).map(t => taskFromDB(t as Record<string, unknown>));
+        const { data } = await supabase.rpc('get_project_data', { p_project_id: projectId });
+        const result = data as { statuses: Record<string, unknown>[] | null; tasks: Record<string, unknown>[] | null } | null;
+        const statuses = (result?.statuses ?? []).map(s => statusFromDB(s));
+        const tasks = (result?.tasks ?? []).map(t => taskFromDB(t));
 
         set(s => ({
           statuses,

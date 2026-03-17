@@ -184,6 +184,64 @@
   text-align: center;
 }
 
+/* ── Sort ── */
+.sortWrap {
+  position: relative;
+  margin-right: auto;
+  flex-shrink: 0;
+}
+
+.sortBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+.sortBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sortBtnActive { border-color: var(--accent); color: var(--accent); }
+
+.sortBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.sortDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 120px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.sortItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: none;
+  text-align: right;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+.sortItem:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sortItemActive { color: var(--accent); background: rgba(108,99,255,0.08); }
+
 .addTaskBtn {
   display: flex;
   align-items: center;

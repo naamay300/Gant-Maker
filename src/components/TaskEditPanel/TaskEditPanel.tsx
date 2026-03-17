@@ -72,7 +72,7 @@ export function TaskEditPanel() {
       setSaved(false);
       if (!selectedTask.name) setTimeout(() => nameRef.current?.focus(), 50);
     }
-  }, [selectedTask?.id]);
+  }, [selectedTask?.id, selectedTask?.startDate, selectedTask?.duration]);
 
   if (!selectedTask || !project) return null;
   const otherTasks = project.tasks.filter(t => t.id !== selectedTask.id);

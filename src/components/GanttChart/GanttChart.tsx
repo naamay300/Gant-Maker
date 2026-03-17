@@ -114,20 +114,16 @@ export function GanttChart() {
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (!drag) return;
     const deltaX = e.clientX - drag.startX;
-    const deltaDays = Math.round(deltaX / PIXELS_PER_DAY);
 
     if (drag.type === 'move') {
-      const newStartPx = drag.originalStartPx + deltaX;
-      setPreview({ taskId: drag.taskId, startPx: newStartPx, widthPx: drag.originalDuration * PIXELS_PER_DAY });
+      setPreview({ taskId: drag.taskId, startPx: drag.originalStartPx + deltaX, widthPx: drag.originalDuration * PIXELS_PER_DAY });
     } else if (drag.type === 'resize-right') {
-      const newDuration = Math.max(MIN_DURATION, drag.originalDuration + deltaDays);
-      setPreview({ taskId: drag.taskId, startPx: drag.originalStartPx, widthPx: newDuration * PIXELS_PER_DAY });
+      const newWidthPx = Math.max(MIN_DURATION * PIXELS_PER_DAY, drag.originalDuration * PIXELS_PER_DAY + deltaX);
+      setPreview({ taskId: drag.taskId, startPx: drag.originalStartPx, widthPx: newWidthPx });
     } else if (drag.type === 'resize-left') {
-      // Moving start date, keeping end date fixed
-      const newDuration = Math.max(MIN_DURATION, drag.originalDuration - deltaDays);
       const endPx = drag.originalStartPx + drag.originalDuration * PIXELS_PER_DAY;
-      const newStartPx = endPx - newDuration * PIXELS_PER_DAY;
-      setPreview({ taskId: drag.taskId, startPx: newStartPx, widthPx: newDuration * PIXELS_PER_DAY });
+      const newStartPx = Math.min(endPx - MIN_DURATION * PIXELS_PER_DAY, drag.originalStartPx + deltaX);
+      setPreview({ taskId: drag.taskId, startPx: newStartPx, widthPx: endPx - newStartPx });
     }
   }, [drag]);
 

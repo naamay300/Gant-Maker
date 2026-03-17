@@ -1,9 +1,15 @@
 import { useRef, useState } from 'react';
-import { Task } from '../../types';
+import { Task, SortField, SortDirection } from '../../types';
 import { useProjectStore, useSortedFilteredTasks } from '../../store/useProjectStore';
 import styles from './TaskList.module.css';
 
 const ROW_HEIGHT = 48;
+
+const SORT_OPTIONS: { value: SortField; label: string }[] = [
+  { value: 'manual',   label: 'סדר ידני' },
+  { value: 'assignee', label: 'אחראי' },
+  { value: 'status',   label: 'סטטוס' },
+];
 
 interface Props {
   tasks: Task[];
@@ -11,7 +17,8 @@ interface Props {
 }
 
 export function TaskList({ ganttScrollRef }: Props) {
-  const { selectTask, selectedTaskId, sortField, reorderTasks, statuses, addTask } = useProjectStore();
+  const { selectTask, selectedTaskId, sortField, sortDirection, setSortField, setSortDirection, reorderTasks, statuses, addTask } = useProjectStore();
+  const [showSort, setShowSort] = useState(false);
   const tasks = useSortedFilteredTasks();
 
   // ── Vertical drag reorder ──────────────────────────────────────────────────
@@ -72,6 +79,42 @@ export function TaskList({ ganttScrollRef }: Props) {
         <div className={styles.colName}>משימה</div>
         <div className={styles.colAssignee}>אחראי</div>
         <div className={styles.colStatus}>סטטוס</div>
+        <div className={styles.sortWrap}>
+          <button
+            className={`${styles.sortBtn} ${sortField !== 'manual' ? styles.sortBtnActive : ''}`}
+            onClick={() => setShowSort(v => !v)}
+            title="מיין לפי"
+          >
+            ↕{sortField !== 'manual' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+          </button>
+          {showSort && (
+            <>
+              <div className={styles.sortBackdrop} onClick={() => setShowSort(false)} />
+              <div className={styles.sortDropdown}>
+                {SORT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    className={`${styles.sortItem} ${sortField === opt.value ? styles.sortItemActive : ''}`}
+                    onClick={() => {
+                      if (sortField === opt.value && opt.value !== 'manual') {
+                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setSortField(opt.value);
+                        setSortDirection('asc');
+                      }
+                      setShowSort(false);
+                    }}
+                  >
+                    {opt.label}
+                    {sortField === opt.value && opt.value !== 'manual' && (
+                      <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Rows */}
