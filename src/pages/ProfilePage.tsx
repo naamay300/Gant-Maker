@@ -36,6 +36,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
+  const [myEmail, setMyEmail] = useState(profile?.email ?? '');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -65,6 +66,8 @@ export function ProfilePage() {
     setWsLoading(true);
     const { data } = await supabase.rpc('get_profile_data');
     if (data) {
+      if (data.myFullName) setFullName(data.myFullName);
+      if (data.myEmail) setMyEmail(data.myEmail);
       setMembers((data.members ?? []).map((m: { userId: string; role: string; email: string; fullName: string }) => ({
         userId: m.userId, role: m.role, email: m.email, fullName: m.fullName,
       })));
@@ -130,7 +133,7 @@ export function ProfilePage() {
     return members.filter((m: Member) => !inProject.has(m.userId));
   }
 
-  const initial = (profile?.fullName || profile?.email || '?')[0].toUpperCase();
+  const initial = (fullName || myEmail || '?')[0].toUpperCase();
 
   return (
     <div className={styles.page}>
@@ -175,7 +178,7 @@ export function ProfilePage() {
             <input
               className={styles.input}
               type="email"
-              value={profile?.email ?? ''}
+              value={myEmail}
               disabled
               dir="ltr"
             />
