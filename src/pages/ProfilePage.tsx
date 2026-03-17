@@ -113,7 +113,7 @@ export function ProfilePage() {
         }
       );
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? 'שגיאה');
+      if (!res.ok) throw new Error(json.error ?? json.message ?? JSON.stringify(json));
       setInviteMsg({ type: 'ok', text: 'הזמנה נשלחה במייל' });
       setInviteEmail('');
       await loadProfileData();
