@@ -184,8 +184,9 @@ export const useProjectStore = create<ProjectStore>()(
       loadProjectData: async (projectId: string) => {
         const { data } = await supabase.rpc('get_project_data', { p_project_id: projectId });
         const result = data as { statuses: Record<string, unknown>[] | null; tasks: Record<string, unknown>[] | null } | null;
-        const statuses = (result?.statuses ?? []).map(s => statusFromDB(s));
-        const tasks = (result?.tasks ?? []).map(t => taskFromDB(t));
+        if (!result) return; // Don't wipe existing data if RPC fails
+        const statuses = (result.statuses ?? []).map(s => statusFromDB(s));
+        const tasks = (result.tasks ?? []).map(t => taskFromDB(t));
 
         set(s => ({
           statuses,
