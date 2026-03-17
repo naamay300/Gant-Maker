@@ -103,7 +103,7 @@ export function ProjectTabs() {
             <button className={styles.userMenuItem} onClick={() => { navigate('/profile'); setShowUserMenu(false); }}>
               פרופיל
             </button>
-            {(account?.role === 'owner' || account?.role === 'admin') && (
+            {(account?.role === 'owner' || account?.role === 'editor') && (
               <button className={styles.userMenuItem} onClick={() => { navigate('/admin'); setShowUserMenu(false); }}>
                 ניהול סביבת עבודה
               </button>

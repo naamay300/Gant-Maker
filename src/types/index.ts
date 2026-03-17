@@ -57,13 +57,13 @@ export interface Account {
   id: string;
   name: string;
   ownerId: string;
-  role: 'owner' | 'admin' | 'member';
+  role: 'owner' | 'editor' | 'viewer';
 }
 
 export interface WorkspaceMember {
   id: string;
   userId: string;
-  role: 'owner' | 'admin' | 'manager' | 'member';
+  role: 'owner' | 'editor' | 'viewer';
   joinedAt: string;
   email: string;
   fullName: string;
@@ -73,7 +73,7 @@ export interface WorkspaceMember {
 export interface Invitation {
   id: string;
   email: string;
-  role: 'admin' | 'manager' | 'member';
+  role: 'editor' | 'viewer';
   createdAt: string;
   expiresAt: string;
   projectId: string | null;

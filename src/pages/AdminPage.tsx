@@ -23,7 +23,7 @@ export function AdminPage() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('member');
+  const [inviteRole, setInviteRole] = useState('viewer');
   const [inviteMsg, setInviteMsg] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -93,7 +93,7 @@ export function AdminPage() {
   }
 
   if (!account) return null;
-  const isOwnerOrAdmin = account.role === 'owner' || account.role === 'admin';
+  const isOwnerOrAdmin = account.role === 'owner' || account.role === 'editor';
 
   return (
     <div className={styles.page}>
@@ -105,7 +105,7 @@ export function AdminPage() {
 
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>📁 {account.name}</h3>
-          <p className={styles.sectionSub}>תפקיד שלך: <strong>{account.role === 'owner' ? 'בעלים' : account.role === 'admin' ? 'מנהל' : 'חבר'}</strong></p>
+          <p className={styles.sectionSub}>תפקיד שלך: <strong>{account.role === 'owner' ? 'בעלים' : account.role === 'editor' ? 'עורך' : 'צופה'}</strong></p>
         </div>
 
         {loading ? (
@@ -125,7 +125,7 @@ export function AdminPage() {
                       <div className={styles.memberName}>{m.fullName || '—'}</div>
                       <div className={styles.memberEmail}>{m.email}</div>
                     </div>
-                    <span className={styles.roleTag}>{m.role === 'owner' ? 'בעלים' : m.role === 'admin' ? 'מנהל' : 'חבר'}</span>
+                    <span className={styles.roleTag}>{m.role === 'owner' ? 'בעלים' : m.role === 'editor' ? 'עורך' : 'צופה'}</span>
                     {isOwnerOrAdmin && m.role !== 'owner' && (
                       <button className={styles.removeBtn} onClick={() => removeMember(m.userId)}>הסר</button>
                     )}

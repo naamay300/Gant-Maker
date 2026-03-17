@@ -35,7 +35,7 @@ export function WorkspaceSettingsPage() {
   const [inviteMsg, setInviteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = account?.role === 'owner' || account?.role === 'admin';
+  const isAdmin = account?.role === 'owner' || account?.role === 'editor';
 
   useEffect(() => {
     if (!account) return;
@@ -85,7 +85,7 @@ export function WorkspaceSettingsPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ email: inviteEmail.trim(), role: 'member', accountId: account.id }),
+          body: JSON.stringify({ email: inviteEmail.trim(), role: 'viewer', accountId: account.id }),
         }
       );
       const json = await res.json();
