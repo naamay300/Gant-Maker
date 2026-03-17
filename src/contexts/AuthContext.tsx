@@ -58,25 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const [p, a] = await Promise.all([
-          fetchProfile(session.user.id),
-          fetchAccount(session.user.id),
-        ]);
-        setProfile(p);
-        setAccount(a);
-      }
-      setLoading(false);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Small delay to allow trigger to create profile
         await new Promise(r => setTimeout(r, 500));
         const [p, a] = await Promise.all([
           fetchProfile(session.user.id),
