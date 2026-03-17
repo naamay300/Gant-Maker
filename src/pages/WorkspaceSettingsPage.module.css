@@ -138,10 +138,9 @@
   flex-shrink: 0;
 }
 
-.role_owner   { color: #f7971e; border-color: #f7971e55; background: rgba(247,151,30,0.1); }
-.role_admin   { color: #6c63ff; border-color: #6c63ff55; background: rgba(108,99,255,0.1); }
-.role_manager { color: #43b89c; border-color: #43b89c55; background: rgba(67,184,156,0.1); }
-.role_member  { color: var(--text-muted); border-color: var(--border); background: var(--bg-tertiary); }
+.role_owner  { color: #c06c00; border-color: #f7971e66; background: rgba(247,151,30,0.12); }
+.role_editor { color: #4040dd; border-color: #6161ff66; background: rgba(97,97,255,0.1); }
+.role_viewer { color: #676879; border-color: #d9dde8; background: #f0f2f5; }
 
 .removeBtn {
   width: 24px;

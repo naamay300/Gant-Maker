@@ -60,19 +60,19 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  border-left: 1px solid rgba(255,255,255,0.03);
+  border-left: 1px solid rgba(0,0,0,0.05);
   pointer-events: none;
 }
-.weekendCol { background: rgba(255,255,255,0.012); }
+.weekendCol { background: rgba(0,0,0,0.025); }
 
 .rowBg {
   position: absolute;
   left: 0;
   right: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
   pointer-events: none;
 }
-.rowBg.selectedRow { background: rgba(108,99,255,0.05); }
+.rowBg.selectedRow { background: rgba(97,97,255,0.07); }
 
 /* ── Today line ── */
 .todayLine {
@@ -112,13 +112,13 @@
 }
 
 .bar:hover {
-  filter: brightness(1.12);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  filter: brightness(1.08);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
 .bar.dragging {
-  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-  filter: brightness(1.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  filter: brightness(1.1);
   z-index: 10;
   cursor: grabbing;
 }
@@ -132,18 +132,18 @@
   cursor: ew-resize;
   z-index: 6;
 }
-.resizeHandle:hover { background: rgba(255,255,255,0.25); border-radius: 6px; }
+.resizeHandle:hover { background: rgba(0,0,0,0.15); border-radius: 6px; }
 
 .resizeLeft {
   left: 0;
   border-radius: 6px 0 0 6px;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.08);
 }
 
 .resizeRight {
   right: 0;
   border-radius: 0 6px 6px 0;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.08);
 }
 
 .barLabel {
