@@ -21,7 +21,7 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
 export function Toolbar({ ganttScrollRef }: Props) {
   const {
     statuses, colorMode, filters, sortField, sortDirection,
-    setColorMode, setFilters, setSortField, setSortDirection, addTask, selectTask,
+    setColorMode, setFilters, setSortField, setSortDirection,
   } = useProjectStore();
 
   const tasks = useSortedFilteredTasks();
@@ -51,12 +51,6 @@ export function Toolbar({ ganttScrollRef }: Props) {
   function scrollByMonth(dir: 1 | -1) {
     if (!ganttScrollRef.current) return;
     ganttScrollRef.current.scrollLeft += dir * 30 * PIXELS_PER_DAY;
-  }
-
-  // ── Add task ────────────────────────────────────────────────────────────────
-  function handleAddTask() {
-    const id = addTask();
-    if (id) selectTask(id);
   }
 
   // ── Filters ─────────────────────────────────────────────────────────────────
@@ -221,10 +215,6 @@ export function Toolbar({ ganttScrollRef }: Props) {
           ⚙ סטטוסים
         </button>
 
-        {/* ── Add task ── */}
-        <button className={styles.addTaskBtn} onClick={handleAddTask}>
-          + משימה
-        </button>
       </div>
 
       {/* Click outside to close dropdowns */}

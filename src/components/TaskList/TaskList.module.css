@@ -183,3 +183,25 @@
   font-size: 12px;
   text-align: center;
 }
+
+.addTaskBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 12px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: calc(100% - 24px);
+}
+
+.addTaskBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-subtle, rgba(108, 99, 255, 0.08));
+}

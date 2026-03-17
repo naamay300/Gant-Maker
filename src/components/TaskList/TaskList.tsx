@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function TaskList({ ganttScrollRef }: Props) {
-  const { selectTask, selectedTaskId, sortField, reorderTasks, statuses } = useProjectStore();
+  const { selectTask, selectedTaskId, sortField, reorderTasks, statuses, addTask } = useProjectStore();
   const tasks = useSortedFilteredTasks();
 
   // ── Vertical drag reorder ──────────────────────────────────────────────────
@@ -149,7 +149,12 @@ export function TaskList({ ganttScrollRef }: Props) {
           <div className={styles.empty}>אין משימות{(useProjectStore.getState().filters.statusIds.length > 0 || useProjectStore.getState().filters.assignees.length > 0) ? ' (יש פילטרים פעילים)' : ''}</div>
         )}
 
-        {/* Creation date tooltip shown in edit panel */}
+        <button
+          className={styles.addTaskBtn}
+          onClick={() => { const id = addTask(); if (id) selectTask(id); }}
+        >
+          + הוסף משימה
+        </button>
       </div>
     </div>
   );
