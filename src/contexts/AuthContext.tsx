@@ -37,17 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { id: data.id, email: data.email, fullName: data.full_name, avatarUrl: data.avatar_url };
   }
 
-  async function fetchAccount(userId: string): Promise<Account | null> {
-    const { data } = await supabase
-      .from('account_members')
-      .select('role, accounts(id, name, owner_id)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .single();
-    if (!data || !data.accounts) return null;
-    const acc = data.accounts as unknown as { id: string; name: string; owner_id: string };
-    return { id: acc.id, name: acc.name, ownerId: acc.owner_id, role: data.role as Account['role'] };
+  async function fetchAccount(_userId: string): Promise<Account | null> {
+    const { data } = await supabase.rpc('get_my_account');
+    if (!data || data.length === 0) return null;
+    const acc = data[0] as { id: string; name: string; owner_id: string; role: string };
+    return { id: acc.id, name: acc.name, ownerId: acc.owner_id, role: acc.role as Account['role'] };
   }
 
   async function refreshAccount(): Promise<Account | null> {
