@@ -109,7 +109,7 @@ export function TaskList({ ganttScrollRef }: Props) {
             className={`${styles.sortBtn} ${sortField !== 'manual' ? styles.sortBtnActive : ''}`}
             onClick={() => setShowSort(v => !v)}
           >
-            מיין ▾
+            <span>מיין</span><span>▾</span>
           </button>
           {showSort && (
             <>
