@@ -132,20 +132,14 @@
 
 .logoutBtn:hover { background: var(--bg-hover); color: var(--today-line); border-color: var(--today-line); }
 
-.membersBtn {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
+.manageLink {
   background: none;
-  border: 1px dashed var(--border);
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-}
-.membersBtn:hover {
-  border-color: var(--accent);
+  border: none;
   color: var(--accent);
-  background: rgba(108, 99, 255, 0.06);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: right;
+  transition: opacity 0.1s;
 }
+.manageLink:hover { opacity: 0.7; }

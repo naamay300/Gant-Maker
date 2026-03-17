@@ -7,187 +7,100 @@
   padding: 40px 16px;
 }
 
-.card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+.content {
   width: 100%;
-  max-width: 600px;
-  overflow: hidden;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .topBar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
 }
 
 .backBtn {
   background: none;
   color: var(--text-muted);
   font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background 0.1s, color 0.1s;
-  flex-shrink: 0;
+  padding: 4px 0;
+  transition: color 0.1s;
 }
-.backBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.backBtn:hover { color: var(--text-primary); }
 
 .pageTitle {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
   flex: 1;
 }
 
-.workspaceName {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 20px;
+/* ── Sections ── */
+.section {
+  background: var(--bg-secondary);
   border: 1px solid var(--border);
-}
-
-/* ── Tabs ── */
-.tabs {
+  border-radius: 12px;
+  padding: 16px 18px;
   display: flex;
-  border-bottom: 1px solid var(--border);
-  padding: 0 20px;
-  gap: 0;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.tab {
-  padding: 10px 16px;
+.sectionTitle {
   font-size: 13px;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  cursor: pointer;
-  transition: color 0.1s, border-color 0.1s;
-}
-.tab:hover { color: var(--text-primary); }
-.tabActive { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-
-/* ── Invite ── */
-.inviteSection {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-}
-
-.inviteToggleBtn {
-  padding: 7px 14px;
-  border-radius: 8px;
-  background: none;
-  border: 1px dashed var(--border);
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  width: 100%;
-  text-align: center;
-}
-.inviteToggleBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(108,99,255,0.06);
-}
-
-.inviteForm {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.inviteInput {
-  flex: 1;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
+  font-weight: 700;
   color: var(--text-primary);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.15s;
 }
-.inviteInput:focus { border-color: var(--accent); }
 
-.roleSelect {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 8px;
-  color: var(--text-secondary);
+/* ── Workspace Info ── */
+.workspaceInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workspaceIcon {
+  font-size: 24px;
+}
+
+.workspaceName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.workspaceRole {
   font-size: 12px;
-  cursor: pointer;
-  outline: none;
-}
-
-.inviteBtn {
-  padding: 8px 16px;
-  background: var(--accent);
-  color: white;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-.inviteBtn:hover:not(:disabled) { background: var(--accent-hover); }
-.inviteBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.cancelBtn {
-  padding: 8px 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
   color: var(--text-muted);
-  font-size: 12px;
-  flex-shrink: 0;
+  margin-top: 2px;
 }
-
-.inviteMsg {
-  margin-top: 8px;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 6px;
-}
-.inviteMsgOk  { color: #43b89c; background: rgba(67,184,156,0.1); }
-.inviteMsgErr { color: #e05555; background: rgba(220,60,60,0.1); }
 
 /* ── List ── */
-.list { padding: 8px 0; }
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
 .memberRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
+  gap: 10px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
 }
 .memberRow:last-child { border-bottom: none; }
-.memberRow:hover { background: var(--bg-hover); }
 
 .avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.avatarInitial {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -197,9 +110,6 @@
 
 .memberInfo {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   overflow: hidden;
 }
 
@@ -217,44 +127,21 @@
   white-space: nowrap;
 }
 
-.inviteExpiry {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.memberActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* ── Role badge ── */
+/* ── Role Badge ── */
 .roleBadge {
   font-size: 10px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 20px;
   border: 1px solid;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .role_owner   { color: #f7971e; border-color: #f7971e55; background: rgba(247,151,30,0.1); }
 .role_admin   { color: #6c63ff; border-color: #6c63ff55; background: rgba(108,99,255,0.1); }
 .role_manager { color: #43b89c; border-color: #43b89c55; background: rgba(67,184,156,0.1); }
 .role_member  { color: var(--text-muted); border-color: var(--border); background: var(--bg-tertiary); }
-
-.roleEditable {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  cursor: pointer;
-  outline: none;
-}
 
 .removeBtn {
   width: 24px;
@@ -268,11 +155,98 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background 0.12s, color 0.12s;
 }
 .removeBtn:hover { background: rgba(220,60,60,0.15); color: #e05555; }
 
+/* ── Invite ── */
+.inviteForm {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--accent); }
+
+.inviteBtn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.inviteBtn:hover:not(:disabled) { background: var(--accent-hover); }
+.inviteBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.inviteMsg {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.inviteMsgOk  { color: #43b89c; background: rgba(67,184,156,0.1); }
+.inviteMsgErr { color: #e05555; background: rgba(220,60,60,0.1); }
+
+/* ── Projects ── */
+.projectRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.projectRow:last-child { border-bottom: none; }
+
+.projectName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.projectMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.taskCount {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.assigneeList {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.assigneeChip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
 /* ── States ── */
-.loading  { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
-.errorMsg { padding: 16px 20px; color: #e05555; font-size: 13px; }
-.empty    { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.loading { text-align: center; color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+.empty   { text-align: center; color: var(--text-muted); font-size: 13px; padding: 12px 0; }

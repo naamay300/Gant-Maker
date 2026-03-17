@@ -77,6 +77,11 @@ export function ProfilePage() {
                 onChange={e => setAccountName(e.target.value)}
                 disabled={!canEditAccount}
               />
+              {perms.isAdmin && (
+                <button type="button" className={styles.manageLink} onClick={() => navigate('/settings/workspace')}>
+                  ניהול חברים ופרויקטים ←
+                </button>
+              )}
             </div>
           )}
 
@@ -93,15 +98,6 @@ export function ProfilePage() {
             </button>
           </div>
 
-          {perms.isAdmin && (
-            <button
-              type="button"
-              className={styles.membersBtn}
-              onClick={() => navigate('/settings/workspace')}
-            >
-              👥 נהל חברי סביבת העבודה
-            </button>
-          )}
         </form>
       </div>
     </div>
