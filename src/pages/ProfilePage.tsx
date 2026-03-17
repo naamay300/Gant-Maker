@@ -39,6 +39,10 @@ export function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (profile?.fullName) setFullName(profile.fullName);
+  }, [profile?.fullName]);
+
   const [members, setMembers] = useState<Member[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [wsLoading, setWsLoading] = useState(true);
