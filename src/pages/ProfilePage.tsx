@@ -26,10 +26,15 @@ interface Project {
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'בעלים',
-  admin: 'אדמין',
-  manager: 'מנהל',
-  member: 'חבר',
+  editor: 'עורך',
+  viewer: 'צופה',
 };
+
+const ROLES: Array<{ value: string; label: string }> = [
+  { value: 'owner', label: 'בעלים' },
+  { value: 'editor', label: 'עורך' },
+  { value: 'viewer', label: 'צופה' },
+];
 
 export function ProfilePage() {
   const { profile, account, session, updateProfile, signOut } = useAuth();
@@ -49,12 +54,15 @@ export function ProfilePage() {
   const [wsLoading, setWsLoading] = useState(true);
 
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<string>('editor');
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const [addingToProject, setAddingToProject] = useState<string | null>(null);
+  const [editingRoleFor, setEditingRoleFor] = useState<string | null>(null);
 
-  const isAdmin = account?.role === 'owner' || account?.role === 'admin';
+  const isOwner = account?.role === 'owner';
+  const isAdmin = isOwner || account?.role === 'editor';
   const hasChanges = fullName.trim() !== (profile?.fullName ?? '');
 
   useEffect(() => {
@@ -101,7 +109,7 @@ export function ProfilePage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ email: inviteEmail.trim(), role: 'member', accountId: account.id }),
+          body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole, accountId: account.id }),
         }
       );
       const json = await res.json();
@@ -114,6 +122,16 @@ export function ProfilePage() {
     } finally {
       setInviting(false);
     }
+  }
+
+  async function updateMemberRole(userId: string, newRole: string) {
+    if (!account) return;
+    await supabase.from('account_members')
+      .update({ role: newRole })
+      .eq('account_id', account.id)
+      .eq('user_id', userId);
+    setEditingRoleFor(null);
+    await loadProfileData();
   }
 
   async function addMemberToProject(projectId: string, userId: string) {
@@ -208,7 +226,27 @@ export function ProfilePage() {
                           <span className={styles.memberName}>{m.fullName || m.email}</span>
                           {m.fullName && <span className={styles.memberEmail}>{m.email}</span>}
                         </div>
-                        <span className={`${styles.roleTag} ${styles['role_' + m.role]}`}>{ROLE_LABELS[m.role] ?? m.role}</span>
+                        <div className={styles.roleWrap}>
+                          <span
+                            className={`${styles.roleTag} ${styles['role_' + m.role]} ${isOwner ? styles.roleTagClickable : ''}`}
+                            onClick={() => isOwner && setEditingRoleFor(editingRoleFor === m.userId ? null : m.userId)}
+                          >
+                            {ROLE_LABELS[m.role] ?? m.role}{isOwner ? ' ▾' : ''}
+                          </span>
+                          {isOwner && editingRoleFor === m.userId && (
+                            <div className={styles.roleDropdown}>
+                              {ROLES.map(r => (
+                                <button
+                                  key={r.value}
+                                  className={`${styles.roleDropdownItem} ${m.role === r.value ? styles.roleDropdownItemActive : ''}`}
+                                  onClick={() => updateMemberRole(m.userId, r.value)}
+                                >
+                                  {r.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -223,6 +261,14 @@ export function ProfilePage() {
                         placeholder="+ הזמן משתמש חדש במייל..."
                         dir="ltr"
                       />
+                      <select
+                        className={styles.roleSelect}
+                        value={inviteRole}
+                        onChange={(e: { target: { value: string } }) => setInviteRole(e.target.value)}
+                      >
+                        <option value="editor">עורך</option>
+                        <option value="viewer">צופה</option>
+                      </select>
                       <button className={styles.inviteBtn} type="submit" disabled={inviting || !inviteEmail.trim()}>
                         {inviting ? '...' : 'שלח'}
                       </button>

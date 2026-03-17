@@ -176,10 +176,9 @@
   flex-shrink: 0;
 }
 
-.role_owner   { color: #f7971e; border-color: #f7971e55; background: rgba(247,151,30,0.1); }
-.role_admin   { color: #6c63ff; border-color: #6c63ff55; background: rgba(108,99,255,0.1); }
-.role_manager { color: #43b89c; border-color: #43b89c55; background: rgba(67,184,156,0.1); }
-.role_member  { color: var(--text-muted); border-color: var(--border); background: var(--bg-tertiary); }
+.role_owner  { color: #f7971e; border-color: #f7971e55; background: rgba(247,151,30,0.1); }
+.role_editor { color: #6c63ff; border-color: #6c63ff55; background: rgba(108,99,255,0.1); }
+.role_viewer { color: var(--text-muted); border-color: var(--border); background: var(--bg-tertiary); }
 
 /* ── Members list ── */
 .memberList {
@@ -232,11 +231,69 @@
   white-space: nowrap;
 }
 
+/* ── Role editing ── */
+.roleWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.roleTagClickable {
+  cursor: pointer;
+  user-select: none;
+}
+.roleTagClickable:hover { opacity: 0.8; }
+
+.roleDropdown {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  min-width: 100px;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.roleDropdownItem {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  transition: background 0.1s;
+  width: 100%;
+}
+.roleDropdownItem:hover { background: var(--bg-hover); }
+.roleDropdownItemActive { color: var(--accent); }
+
 /* ── Invite form ── */
 .inviteForm {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
+
+.roleSelect {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.roleSelect:focus { border-color: var(--accent); }
 
 .inviteBtn {
   padding: 8px 14px;
