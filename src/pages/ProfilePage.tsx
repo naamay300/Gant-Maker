@@ -164,8 +164,9 @@ export function ProfilePage() {
     const { data, error } = await supabase.functions.invoke('update-member-role', {
       body: { targetUserId: userId, accountId: account.id, newRole },
     });
-    if (error || data?.error) {
-      setRoleUpdateErr('שגיאה בעדכון תפקיד');
+    const errMsg = data?.error ?? (error as { message?: string } | null)?.message ?? null;
+    if (errMsg) {
+      setRoleUpdateErr(errMsg);
       return;
     }
     await loadProfileData();
