@@ -9,7 +9,7 @@
 
 .container {
   width: 100%;
-  max-width: 440px;
+  max-width: 600px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -458,6 +458,71 @@
   margin-top: 4px;
 }
 .logoutBtn:hover { color: #e05555; }
+
+/* ── Invitations label ── */
+.invitationsLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 2px 0;
+}
+
+/* ── Invitations list ── */
+.invitationList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.invitationRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.invitationRow:last-child { border-bottom: none; }
+
+.invitationEmail {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: left;
+}
+
+.invitationStatus {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.statusPending  { color: #c06c00; background: rgba(247,151,30,0.12); border: 1px solid #f7971e66; }
+.statusAccepted { color: #43b89c; background: rgba(67,184,156,0.1);  border: 1px solid #43b89c66; }
+
+.resendBtn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  transition: opacity 0.1s;
+}
+.resendBtn:hover:not(:disabled) { opacity: 0.7; }
+.resendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── States ── */
 .loading { text-align: center; color: var(--text-muted); font-size: 13px; padding: 8px 0; }

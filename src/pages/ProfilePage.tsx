@@ -4,6 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import styles from './ProfilePage.module.css';
 
+interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  status: 'pending' | 'accepted';
+}
+
 interface Member {
   userId: string;
   email: string;
@@ -37,7 +44,7 @@ const ROLES: Array<{ value: string; label: string }> = [
 ];
 
 export function ProfilePage() {
-  const { profile, account, session, updateProfile, signOut } = useAuth();
+  const { profile, account, updateProfile, signOut } = useAuth();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
@@ -57,6 +64,9 @@ export function ProfilePage() {
   const [inviteRole, setInviteRole] = useState<string>('editor');
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [resendingFor, setResendingFor] = useState<string | null>(null);
 
   const [addingToProject, setAddingToProject] = useState<string | null>(null);
   const [editingRoleFor, setEditingRoleFor] = useState<string | null>(null);
@@ -83,7 +93,32 @@ export function ProfilePage() {
         id: p.id, name: p.name, taskCount: p.taskCount, members: p.members ?? [],
       })));
     }
+    if (account) {
+      const { data: invData } = await supabase
+        .from('invitations')
+        .select('id, email, role, status')
+        .eq('account_id', account.id)
+        .order('created_at', { ascending: false });
+      setInvitations((invData ?? []) as Invitation[]);
+    }
     setWsLoading(false);
+  }
+
+  async function handleResend(email: string, role: string) {
+    if (!account) return;
+    setResendingFor(email);
+    try {
+      await supabase.functions.invoke('invite-user', {
+        body: { email, role, accountId: account.id },
+      });
+    } finally {
+      setResendingFor(null);
+    }
+  }
+
+  async function updateInvitationStatus(invitationId: string, newStatus: string) {
+    await supabase.from('invitations').update({ status: newStatus }).eq('id', invitationId);
+    await loadProfileData();
   }
 
   async function handleSave() {
@@ -97,23 +132,25 @@ export function ProfilePage() {
 
   async function handleInvite(e: { preventDefault(): void }) {
     e.preventDefault();
-    if (!inviteEmail.trim() || !account || !session) return;
+    if (!inviteEmail.trim() || !account) return;
     setInviting(true);
     setInviteMsg(null);
     try {
-      const res = await fetch(
-        'https://bqrfjdwniwlwaixpzscw.supabase.co/functions/v1/invite-user',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole, accountId: account.id }),
+      const { data, error: fnError } = await supabase.functions.invoke('invite-user', {
+        body: { email: inviteEmail.trim(), role: inviteRole, accountId: account.id },
+      });
+      // fnError can contain the JSON body for non-2xx responses
+      if (fnError) {
+        const ctx = (fnError as { context?: unknown }).context;
+        let msg = (fnError as { message?: string }).message ?? String(fnError);
+        if (ctx instanceof Response) {
+          try { const j = await ctx.json(); msg = j.error ?? msg; } catch { /* ignore */ }
+        } else if (ctx && typeof ctx === 'object' && 'error' in ctx) {
+          msg = (ctx as { error: string }).error;
         }
-      );
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? json.message ?? JSON.stringify(json));
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
       setInviteMsg({ type: 'ok', text: 'הזמנה נשלחה במייל' });
       setInviteEmail('');
       await loadProfileData();
@@ -226,6 +263,15 @@ export function ProfilePage() {
                           <span className={styles.memberName}>{m.fullName || m.email}</span>
                           {m.fullName && <span className={styles.memberEmail}>{m.email}</span>}
                         </div>
+                        {(() => {
+                          const inv = invitations.find(i => i.email === m.email);
+                          if (!inv) return null;
+                          return (
+                            <span className={`${styles.invitationStatus} ${inv.status === 'accepted' ? styles.statusAccepted : styles.statusPending}`}>
+                              {inv.status === 'accepted' ? '✓ אישר' : 'ממתין'}
+                            </span>
+                          );
+                        })()}
                         <div className={styles.roleWrap}>
                           <span
                             className={`${styles.roleTag} ${styles['role_' + m.role]} ${isOwner ? styles.roleTagClickable : ''}`}
@@ -278,6 +324,32 @@ export function ProfilePage() {
                     <div className={`${styles.inviteMsg} ${inviteMsg.type === 'err' ? styles.inviteMsgErr : styles.inviteMsgOk}`}>
                       {inviteMsg.text}
                     </div>
+                  )}
+
+                  {invitations.some(inv => inv.status === 'pending') && (
+                    <>
+                      <div className={styles.invitationsLabel}>הזמנות שנשלחו וטרם אושרו</div>
+                      <div className={styles.invitationList}>
+                        {invitations.filter(inv => inv.status === 'pending').map((inv: Invitation) => (
+                          <div key={inv.id} className={styles.invitationRow}>
+                            <span className={styles.invitationEmail}>{inv.email}</span>
+                            <button
+                              className={styles.resendBtn}
+                              onClick={() => updateInvitationStatus(inv.id, 'accepted')}
+                            >
+                              שנה סטטוס
+                            </button>
+                            <button
+                              className={styles.resendBtn}
+                              onClick={() => handleResend(inv.email, inv.role)}
+                              disabled={resendingFor === inv.email}
+                            >
+                              {resendingFor === inv.email ? '...' : 'שלח מייל שוב'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
 

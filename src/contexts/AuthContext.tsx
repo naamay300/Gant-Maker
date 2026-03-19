@@ -130,3 +130,12 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be inside AuthProvider');
   return ctx;
 }
+
+export function usePermissions() {
+  const { account } = useAuth();
+  const role = account?.role ?? 'viewer';
+  return {
+    canEdit: role === 'owner' || role === 'editor',
+    canManage: role === 'owner',
+  };
+}

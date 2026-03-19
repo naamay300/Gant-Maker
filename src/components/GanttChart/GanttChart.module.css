@@ -5,51 +5,64 @@
   user-select: none;
 }
 
-/* ── Header ── */
+/* ════════════════════════════════
+   HEADER — Monday-style timeline
+   ════════════════════════════════ */
 .header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-header);
   background: var(--bg-secondary);
   border-bottom: 2px solid var(--border);
 }
 
+/* Month row */
 .monthRow {
   display: flex;
-  height: 20px;
+  height: 28px;
+  background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
 }
 
 .monthCell {
   font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 0 8px;
+  letter-spacing: 0.8px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-light);
   overflow: hidden;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.dayRow { display: flex; height: 20px; }
+/* Day row */
+.dayRow { display: flex; height: 26px; }
 
 .dayCell {
   font-size: 10px;
+  font-weight: 500;
   color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-light);
   flex-shrink: 0;
 }
-.dayCell.weekend { background: rgba(255,255,255,0.02); }
-.dayCell.todayCell { color: var(--today-line); font-weight: 700; }
 
-/* ── Grid ── */
+.dayCell.weekend { background: rgba(0,0,0,0.016); }
+
+.dayCell.todayCell {
+  color: var(--today-line);
+  font-weight: 700;
+}
+
+/* ════════════════════════════════
+   GRID
+   ════════════════════════════════ */
 .grid {
   position: relative;
   padding-bottom: 60px;
@@ -60,21 +73,25 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  border-left: 1px solid rgba(0,0,0,0.05);
+  border-left: 1px solid rgba(0,0,0,0.035);
   pointer-events: none;
 }
-.weekendCol { background: rgba(0,0,0,0.025); }
+
+.weekendCol { background: rgba(0,0,0,0.016); }
 
 .rowBg {
   position: absolute;
   left: 0;
   right: 0;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--border-light);
   pointer-events: none;
+  transition: background 0.13s;
 }
-.rowBg.selectedRow { background: rgba(97,97,255,0.07); }
+.rowBg.selectedRow { background: rgba(0, 180, 216, 0.05); }
 
-/* ── Today line ── */
+/* ════════════════════════════════
+   TODAY LINE — Monday bright blue
+   ════════════════════════════════ */
 .todayLine {
   position: absolute;
   top: 0;
@@ -84,43 +101,63 @@
   z-index: 5;
   pointer-events: none;
 }
+
 .todayLabel {
   position: absolute;
-  top: -18px;
+  top: -2px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 9px;
   font-weight: 700;
-  color: var(--today-line);
+  color: #fff;
   white-space: nowrap;
-  background: var(--bg-secondary);
-  padding: 1px 4px;
-  border-radius: 3px;
+  background: var(--today-line);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0,180,216,0.4);
 }
 
-/* ── Task bars ── */
+/* ════════════════════════════════
+   TASK BARS — Monday pill style
+   ════════════════════════════════ */
 .bar {
   position: absolute;
-  height: 28px;
-  border-radius: 6px;
+  height: 26px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   cursor: grab;
-  z-index: 4;
-  transition: box-shadow 0.12s, filter 0.12s;
-  overflow: visible;
+  z-index: var(--z-bar);
+  box-shadow: var(--shadow-bar);
+  transition: box-shadow 0.15s, filter 0.15s, transform 0.12s;
+  overflow: hidden;                    /* keep label inside pill */
+}
+
+/* Shine overlay on bars */
+.bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.22) 0%,
+    rgba(255,255,255,0.00) 60%);
+  pointer-events: none;
 }
 
 .bar:hover {
   filter: brightness(1.08);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-bar-hover);
+  transform: translateY(-1px) scaleY(1.04);
 }
 
 .bar.dragging {
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.30);
   filter: brightness(1.1);
   z-index: 10;
   cursor: grabbing;
+  transform: translateY(-2px);
 }
 
 /* ── Resize handles ── */
@@ -128,24 +165,29 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 8px;
+  width: 10px;
   cursor: ew-resize;
   z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
-.resizeHandle:hover { background: rgba(0,0,0,0.15); border-radius: 6px; }
+.bar:hover .resizeHandle { opacity: 1; }
 
-.resizeLeft {
-  left: 0;
-  border-radius: 6px 0 0 6px;
-  background: rgba(0,0,0,0.08);
+.resizeHandle::before {
+  content: '';
+  width: 2px;
+  height: 10px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 2px;
 }
 
-.resizeRight {
-  right: 0;
-  border-radius: 0 6px 6px 0;
-  background: rgba(0,0,0,0.08);
-}
+.resizeLeft  { left: 4px; }
+.resizeRight { right: 4px; }
 
+/* ── Bar label ── */
 .barLabel {
   font-size: 11px;
   font-weight: 600;
@@ -154,7 +196,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
-  padding: 0 10px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  padding: 0 12px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
   pointer-events: none;
+  position: relative;
+  z-index: 1;
+  letter-spacing: 0.1px;
 }

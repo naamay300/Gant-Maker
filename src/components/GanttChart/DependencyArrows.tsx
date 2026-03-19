@@ -1,6 +1,7 @@
 import { Task } from '../../types';
 import { useProjectStore } from '../../store/useProjectStore';
-import { dateToPixelOffset, ROW_HEIGHT, PIXELS_PER_DAY } from '../../utils/dateUtils';
+import { ROW_HEIGHT } from '../../utils/dateUtils';
+import { differenceInDays, startOfDay, parseISO } from 'date-fns';
 
 interface Props {
   tasks: Task[];
@@ -8,7 +9,10 @@ interface Props {
 }
 
 export function DependencyArrows({ tasks, timelineStart }: Props) {
-  const { statuses } = useProjectStore();
+  const { statuses, pixelsPerDay } = useProjectStore();
+  function toPx(dateStr: string) {
+    return differenceInDays(startOfDay(parseISO(dateStr)), startOfDay(timelineStart)) * pixelsPerDay;
+  }
 
   const taskIndex: Record<string, number> = {};
   tasks.forEach((t, i) => { taskIndex[t.id] = i; });
@@ -23,11 +27,11 @@ export function DependencyArrows({ tasks, timelineStart }: Props) {
       const depIdx = taskIndex[depId];
       const taskIdx = taskIndex[task.id];
 
-      // Arrow FROM the dependent task → TO the dependency task (arrowhead at dependency)
-      const x1 = dateToPixelOffset(task.startDate, timelineStart);
-      const y1 = taskIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
-      const x2 = dateToPixelOffset(depTask.startDate, timelineStart) + depTask.duration * PIXELS_PER_DAY;
-      const y2 = depIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
+      // Arrow FROM the predecessor's right edge → TO the dependent task's left edge
+      const x1 = toPx(depTask.startDate) + depTask.duration * pixelsPerDay;
+      const y1 = depIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
+      const x2 = toPx(task.startDate);
+      const y2 = taskIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
 
       const depStatus = statuses.find(s => s.id === depTask.statusId);
       const done = depStatus?.name === 'הושלם';
@@ -39,7 +43,7 @@ export function DependencyArrows({ tasks, timelineStart }: Props) {
   if (!arrows.length) return null;
 
   const maxX = Math.max(...tasks.map(t =>
-    dateToPixelOffset(t.startDate, timelineStart) + t.duration * PIXELS_PER_DAY
+    toPx(t.startDate) + t.duration * pixelsPerDay
   )) + 200;
   const maxY = tasks.length * ROW_HEIGHT + 40;
 
@@ -62,14 +66,25 @@ export function DependencyArrows({ tasks, timelineStart }: Props) {
       {arrows.map(({ id, x1, y1, x2, y2, done }) => {
         const color = done ? '#22c55e' : '#f97316';
         const markerId = done ? 'arr-done' : 'arr-blocked';
-        const midX = x2 + Math.max(16, (x1 - x2) / 2);
+        // Build an L-shaped path: right from x1, down/up, then to x2
+        // When x2 < x1 (tasks overlap), loop around with a detour
+        let d: string;
+        if (x2 >= x1 + 8) {
+          const midX = x1 + (x2 - x1) / 2;
+          d = `M${x1} ${y1} L${midX} ${y1} L${midX} ${y2} L${x2} ${y2}`;
+        } else {
+          // Loop: go right a bit, down/up, go left past x2, then arrive at x2
+          const detour = x1 + 24;
+          const detourTarget = Math.min(x2 - 8, x1 - 8);
+          d = `M${x1} ${y1} L${detour} ${y1} L${detour} ${y2} L${detourTarget} ${y2} L${x2} ${y2}`;
+        }
         return (
           <path
             key={id}
-            d={`M${x1} ${y1} L${midX} ${y1} L${midX} ${y2} L${x2} ${y2}`}
+            d={d}
             fill="none"
             stroke={color}
-            strokeOpacity={0.5}
+            strokeOpacity={0.6}
             strokeWidth={1.5}
             strokeDasharray="4 3"
             markerEnd={`url(#${markerId})`}

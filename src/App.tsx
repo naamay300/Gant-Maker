@@ -8,7 +8,6 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { AccountSetupPage } from './pages/AccountSetupPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { AdminPage } from './pages/AdminPage';
 import { WorkspaceSettingsPage } from './pages/WorkspaceSettingsPage';
 import styles from './App.module.css';
 
@@ -65,11 +64,7 @@ function AppRoutes() {
         path="/profile"
         element={user ? <ProfilePage /> : <Navigate to="/login" replace />}
       />
-      <Route
-        path="/admin"
-        element={user ? <AdminPage /> : <Navigate to="/login" replace />}
-      />
-      <Route
+<Route
         path="/settings/workspace"
         element={user ? <WorkspaceSettingsPage /> : <Navigate to="/login" replace />}
       />

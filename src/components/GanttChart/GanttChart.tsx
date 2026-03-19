@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState, useCallback } from 'react';
 import { Task } from '../../types';
 import {
-  PIXELS_PER_DAY, ROW_HEIGHT,
+  ROW_HEIGHT,
   getTimelineStartDate, getTimelineEndDate, generateDays,
-  dateToPixelOffset, pixelOffsetToDate, isWeekend, isSameDay,
+  pixelOffsetToDate, isWeekend, isSameDay,
   formatDayLabel, formatMonthLabel,
 } from '../../utils/dateUtils';
 import { useProjectStore, useSortedFilteredTasks, useActiveProject } from '../../store/useProjectStore';
+import { usePermissions } from '../../contexts/AuthContext';
 import { DependencyArrows } from './DependencyArrows';
 import { addDays, parseISO, format, startOfDay, differenceInDays } from 'date-fns';
 import styles from './GanttChart.module.css';
@@ -32,7 +33,8 @@ interface PreviewState {
 }
 
 export function GanttChart() {
-  const { updateTask, selectTask, selectedTaskId, statuses, colorMode } = useProjectStore();
+  const { canEdit } = usePermissions();
+  const { updateTask, selectTask, selectedTaskId, statuses, colorMode, pixelsPerDay } = useProjectStore();
   const tasks = useSortedFilteredTasks();
   const project = useActiveProject();
   const allTasks = project?.tasks ?? [];
@@ -71,10 +73,10 @@ export function GanttChart() {
     return generateDays(timelineStart, Math.max(count, 90));
   }, [timelineStart, timelineEnd]);
 
-  const totalWidth = days.length * PIXELS_PER_DAY;
+  const totalWidth = days.length * pixelsPerDay;
 
   const todayOffset = useMemo(
-    () => differenceInDays(today, startOfDay(timelineStart)) * PIXELS_PER_DAY,
+    () => differenceInDays(today, startOfDay(timelineStart)) * pixelsPerDay,
     [today, timelineStart]
   );
 
@@ -102,10 +104,10 @@ export function GanttChart() {
 
   // ── Pixel helpers ───────────────────────────────────────────────────────────
   function taskStartPx(task: Task) {
-    return dateToPixelOffset(task.startDate, timelineStart);
+    return differenceInDays(startOfDay(parseISO(task.startDate)), startOfDay(timelineStart)) * pixelsPerDay;
   }
   function taskWidthPx(task: Task) {
-    return task.duration * PIXELS_PER_DAY;
+    return task.duration * pixelsPerDay;
   }
 
   // ── Drag start ──────────────────────────────────────────────────────────────
@@ -115,69 +117,62 @@ export function GanttChart() {
     selectTask(task.id);
     const sPx = taskStartPx(task);
     const wPx = taskWidthPx(task);
-    setDrag({
+    const dragState: DragState = {
       taskId: task.id,
       type,
       startX: e.clientX,
       originalStartDate: task.startDate,
       originalDuration: task.duration,
       originalStartPx: sPx,
-    });
+    };
+    setDrag(dragState);
     setPreview({ taskId: task.id, startPx: sPx, widthPx: wPx });
-  }, [selectTask]);
+    document.body.style.cursor = 'grabbing';
 
-  // ── Mouse move ──────────────────────────────────────────────────────────────
-  const onMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!drag) return;
-    const deltaX = e.clientX - drag.startX;
-
-    if (drag.type === 'move') {
-      setPreview({ taskId: drag.taskId, startPx: drag.originalStartPx + deltaX, widthPx: drag.originalDuration * PIXELS_PER_DAY });
-    } else if (drag.type === 'resize-right') {
-      const newWidthPx = Math.max(MIN_DURATION * PIXELS_PER_DAY, drag.originalDuration * PIXELS_PER_DAY + deltaX);
-      setPreview({ taskId: drag.taskId, startPx: drag.originalStartPx, widthPx: newWidthPx });
-    } else if (drag.type === 'resize-left') {
-      const endPx = drag.originalStartPx + drag.originalDuration * PIXELS_PER_DAY;
-      const newStartPx = Math.min(endPx - MIN_DURATION * PIXELS_PER_DAY, drag.originalStartPx + deltaX);
-      setPreview({ taskId: drag.taskId, startPx: newStartPx, widthPx: endPx - newStartPx });
+    function onMove(ev: MouseEvent) {
+      const deltaX = ev.clientX - dragState.startX;
+      if (dragState.type === 'move') {
+        setPreview({ taskId: dragState.taskId, startPx: dragState.originalStartPx + deltaX, widthPx: dragState.originalDuration * pixelsPerDay });
+      } else if (dragState.type === 'resize-right') {
+        const newWidthPx = Math.max(MIN_DURATION * pixelsPerDay, dragState.originalDuration * pixelsPerDay + deltaX);
+        setPreview({ taskId: dragState.taskId, startPx: dragState.originalStartPx, widthPx: newWidthPx });
+      } else if (dragState.type === 'resize-left') {
+        const endPx = dragState.originalStartPx + dragState.originalDuration * pixelsPerDay;
+        const newStartPx = Math.min(endPx - MIN_DURATION * pixelsPerDay, dragState.originalStartPx + deltaX);
+        setPreview({ taskId: dragState.taskId, startPx: newStartPx, widthPx: endPx - newStartPx });
+      }
     }
-  }, [drag]);
 
-  // ── Mouse up ─────────────────────────────────────────────────────────────────
-  const onMouseUp = useCallback((e: React.MouseEvent) => {
-    if (!drag) return;
-    const deltaX = e.clientX - drag.startX;
-    const deltaDays = Math.round(deltaX / PIXELS_PER_DAY);
+    function onUp(ev: MouseEvent) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      const deltaX = ev.clientX - dragState.startX;
+      const deltaDays = Math.round(deltaX / pixelsPerDay);
 
-    if (drag.type === 'move' && deltaDays !== 0) {
-      const newStartDate = pixelOffsetToDate(drag.originalStartPx + deltaX, timelineStart);
-      updateTask(drag.taskId, { startDate: newStartDate });
-    } else if (drag.type === 'resize-right' && deltaDays !== 0) {
-      const newDuration = Math.max(MIN_DURATION, drag.originalDuration + deltaDays);
-      updateTask(drag.taskId, { duration: newDuration });
-    } else if (drag.type === 'resize-left' && deltaDays !== 0) {
-      const newDuration = Math.max(MIN_DURATION, drag.originalDuration - deltaDays);
-      const endDate = addDays(parseISO(drag.originalStartDate), drag.originalDuration);
-      const newStartDate = format(addDays(endDate, -newDuration), 'yyyy-MM-dd');
-      updateTask(drag.taskId, { startDate: newStartDate, duration: newDuration });
-    }
-    setDrag(null);
-    setPreview(null);
-  }, [drag, timelineStart, updateTask]);
-
-  const onMouseLeave = useCallback(() => {
-    if (drag) {
+      if (dragState.type === 'move' && deltaDays !== 0) {
+        const newStartDate = pixelOffsetToDate(dragState.originalStartPx + deltaX, timelineStart);
+        updateTask(dragState.taskId, { startDate: newStartDate });
+      } else if (dragState.type === 'resize-right' && deltaDays !== 0) {
+        const newDuration = Math.max(MIN_DURATION, dragState.originalDuration + deltaDays);
+        updateTask(dragState.taskId, { duration: newDuration });
+      } else if (dragState.type === 'resize-left' && deltaDays !== 0) {
+        const newDuration = Math.max(MIN_DURATION, dragState.originalDuration - deltaDays);
+        const endDate = addDays(parseISO(dragState.originalStartDate), dragState.originalDuration);
+        const newStartDate = format(addDays(endDate, -newDuration), 'yyyy-MM-dd');
+        updateTask(dragState.taskId, { startDate: newStartDate, duration: newDuration });
+      }
       setDrag(null);
       setPreview(null);
     }
-  }, [drag]);
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [selectTask, pixelsPerDay, timelineStart, updateTask]);
 
   return (
     <div
       className={styles.wrapper}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseLeave}
       style={{ cursor: drag ? 'grabbing' : 'default' }}
       ref={wrapperRef}
     >
@@ -188,7 +183,7 @@ export function GanttChart() {
             <div
               key={g.label + g.startIdx}
               className={styles.monthCell}
-              style={{ width: g.count * PIXELS_PER_DAY }}
+              style={{ width: g.count * pixelsPerDay }}
             >
               {g.label}
             </div>
@@ -199,7 +194,7 @@ export function GanttChart() {
             <div
               key={i}
               className={`${styles.dayCell} ${isWeekend(d) ? styles.weekend : ''} ${isSameDay(d, today) ? styles.todayCell : ''}`}
-              style={{ width: PIXELS_PER_DAY }}
+              style={{ width: pixelsPerDay }}
             >
               {formatDayLabel(d)}
             </div>
@@ -208,18 +203,18 @@ export function GanttChart() {
       </div>
 
       {/* ── Grid ───────────────────────────────────────────────────────────── */}
-      <div className={styles.grid} style={{ width: totalWidth }}>
+      <div className={styles.grid} style={{ width: totalWidth, minHeight: Math.max(tasks.length * ROW_HEIGHT + 60, 900) }}>
         {/* Column backgrounds */}
         {days.map((d, i) => (
           <div
             key={i}
             className={`${styles.col} ${isWeekend(d) ? styles.weekendCol : ''}`}
-            style={{ left: i * PIXELS_PER_DAY, width: PIXELS_PER_DAY }}
+            style={{ left: i * pixelsPerDay, width: pixelsPerDay }}
           />
         ))}
 
         {/* Today line */}
-        <div className={styles.todayLine} style={{ left: todayOffset + PIXELS_PER_DAY / 2 }}>
+        <div className={styles.todayLine} style={{ left: todayOffset + pixelsPerDay / 2 }}>
           <span className={styles.todayLabel}>היום</span>
         </div>
 
@@ -265,13 +260,13 @@ export function GanttChart() {
             <div
               key={task.id}
               className={`${styles.bar} ${isPreview && drag ? styles.dragging : ''}`}
-              style={barStyle}
-              onMouseDown={(e) => startDrag(e, task, 'move')}
+              style={{ ...barStyle, cursor: canEdit ? 'grab' : 'default' }}
+              onMouseDown={canEdit ? (e) => startDrag(e, task, 'move') : undefined}
             >
               {/* Left resize handle */}
               <div
                 className={`${styles.resizeHandle} ${styles.resizeLeft}`}
-                onMouseDown={(e) => startDrag(e, task, 'resize-left')}
+                onMouseDown={canEdit ? (e) => startDrag(e, task, 'resize-left') : undefined}
               />
 
               <span className={styles.barLabel}>
@@ -281,10 +276,12 @@ export function GanttChart() {
               </span>
 
               {/* Right resize handle */}
-              <div
-                className={`${styles.resizeHandle} ${styles.resizeRight}`}
-                onMouseDown={(e) => startDrag(e, task, 'resize-right')}
-              />
+              {canEdit && (
+                <div
+                  className={`${styles.resizeHandle} ${styles.resizeRight}`}
+                  onMouseDown={(e) => startDrag(e, task, 'resize-right')}
+                />
+              )}
             </div>
           );
         })}

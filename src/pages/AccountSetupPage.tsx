@@ -16,9 +16,25 @@ export function AccountSetupPage() {
     setLoading(true);
     setError('');
 
+    // Check if user already has an account (invited user)
+    const { data: existingAccount } = await supabase.rpc('get_my_account');
+    if (existingAccount && existingAccount.length > 0) {
+      window.location.href = '/app';
+      return;
+    }
+
     const { data: accountId, error: err } = await supabase.rpc('create_account', { p_name: trimmed });
-    if (err || !accountId) {
-      setError(err?.message || 'שגיאה ביצירת סביבת העבודה. נסה שוב.');
+    if (err) {
+      if (err.message.includes('duplicate key') || err.message.includes('unique constraint')) {
+        window.location.href = '/app';
+        return;
+      }
+      setError(err.message || 'שגיאה ביצירת סביבת העבודה. נסה שוב.');
+      setLoading(false);
+      return;
+    }
+    if (!accountId) {
+      setError('שגיאה ביצירת סביבת העבודה. נסה שוב.');
       setLoading(false);
       return;
     }

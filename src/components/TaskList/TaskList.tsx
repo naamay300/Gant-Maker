@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Task, SortField } from '../../types';
 import { format, parseISO } from 'date-fns';
 import { useProjectStore, useSortedFilteredTasks, useActiveProject } from '../../store/useProjectStore';
+import { usePermissions } from '../../contexts/AuthContext';
 import styles from './TaskList.module.css';
 
 const ROW_HEIGHT = 48;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function TaskList({ ganttScrollRef }: Props) {
+  const { canEdit } = usePermissions();
   const {
     selectTask, selectedTaskId, sortField, sortDirection,
     setSortField, setSortDirection, reorderTasks, statuses, addTask, deleteTask,
@@ -161,8 +163,9 @@ export function TaskList({ ganttScrollRef }: Props) {
               >
                 <div
                   className={styles.colHandle}
-                  onMouseDown={(e) => onHandleMouseDown(e, task)}
-                  title="גרור לשינוי סדר"
+                  onMouseDown={canEdit ? (e) => onHandleMouseDown(e, task) : undefined}
+                  title={canEdit ? 'גרור לשינוי סדר' : ''}
+                  style={canEdit ? undefined : { opacity: 0 }}
                 >⋮⋮</div>
 
                 <div className={styles.colNum}>
@@ -211,11 +214,13 @@ export function TaskList({ ganttScrollRef }: Props) {
                 </div>
 
                 <div className={styles.colDelete}>
-                  <button
-                    className={styles.deleteXBtn}
-                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(task.id); }}
-                    title="מחק משימה"
-                  >✕</button>
+                  {canEdit && (
+                    <button
+                      className={styles.deleteXBtn}
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(task.id); }}
+                      title="מחק משימה"
+                    >✕</button>
+                  )}
                 </div>
               </div>
             </div>
@@ -224,12 +229,14 @@ export function TaskList({ ganttScrollRef }: Props) {
 
         {tasks.length === 0 && <div className={styles.empty}>אין משימות</div>}
 
-        <button
-          className={styles.addTaskBtn}
-          onClick={() => { const id = addTask(); if (id) selectTask(id); }}
-        >
-          + הוסף משימה
-        </button>
+        {canEdit && (
+          <button
+            className={styles.addTaskBtn}
+            onClick={() => { const id = addTask(); if (id) selectTask(id); }}
+          >
+            + הוסף משימה
+          </button>
+        )}
       </div>
 
       {/* Delete confirmation */}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProjectStore, useActiveProject, useSelectedTask, useAllAssignees } from '../../store/useProjectStore';
+import { usePermissions } from '../../contexts/AuthContext';
 import { Assignee, TaskFile, TaskLink } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 import { format, parseISO } from 'date-fns';
@@ -34,7 +35,8 @@ function ColorPalette({ value, onChange }: { value: string; onChange: (c: string
 }
 
 export function TaskEditPanel() {
-  const { updateTask, selectTask, statuses, taskFiles, fetchTaskFiles, uploadTaskFile, deleteTaskFile, getFileUrl } = useProjectStore();
+  const { canEdit } = usePermissions();
+  const { updateTask, selectTask, statuses, taskFiles, fetchTaskFiles, uploadTaskFile, deleteTaskFile, getFileUrl, propagateAssigneeColor } = useProjectStore();
   const project = useActiveProject();
   const selectedTask = useSelectedTask();
   const knownAssignees = useAllAssignees();
@@ -199,6 +201,8 @@ export function TaskEditPanel() {
     setAssignees(next);
     setEditingColorFor(null);
     save({ assignees: next });
+    // Propagate color change across all projects and tasks
+    propagateAssigneeColor(aName, color);
   }
 
   // ── Status ──────────────────────────────────────────────────────────────────
@@ -250,6 +254,7 @@ export function TaskEditPanel() {
               value={name}
               onChange={e => { setName(e.target.value); markChanged(); save({ name: e.target.value }); }}
               placeholder="שם המשימה..."
+              readOnly={!canEdit}
             />
           </div>
 
@@ -268,10 +273,12 @@ export function TaskEditPanel() {
                     title="שנה צבע"
                   />
                   <span className={styles.tagName}>{a.name}</span>
-                  <button
-                    className={styles.removeTag}
-                    onClick={() => removeAssignee(a.name)}
-                  >×</button>
+                  {canEdit && (
+                    <button
+                      className={styles.removeTag}
+                      onClick={() => removeAssignee(a.name)}
+                    >×</button>
+                  )}
                   {editingColorFor === a.name && (
                     <div className={styles.palettePopup}>
                       <ColorPalette value={a.color} onChange={c => updateAssigneeColor(a.name, c)} />
@@ -280,7 +287,7 @@ export function TaskEditPanel() {
                 </span>
               ))}
 
-              {!showAssigneeAdd && (
+              {canEdit && !showAssigneeAdd && (
                 <button className={styles.addAssigneeBtn} onClick={() => setShowAssigneeAdd(true)}>
                   + הוסף
                 </button>
@@ -288,7 +295,7 @@ export function TaskEditPanel() {
             </div>
 
             {/* New assignee input */}
-            {showAssigneeAdd && (
+            {canEdit && showAssigneeAdd && (
               <div className={styles.assigneeAddRow}>
                 <div className={styles.assigneeColorWrap}>
                   <button
@@ -345,19 +352,21 @@ export function TaskEditPanel() {
                 type="date"
                 value={startDate}
                 onChange={e => { setStartDate(e.target.value); markChanged(); save({ startDate: e.target.value }); }}
+                disabled={!canEdit}
               />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>משך (ימים)</label>
               <div className={styles.durationRow}>
-                <button className={styles.durationBtn} onClick={() => { const d = Math.max(1, duration - 1); setDuration(d); markChanged(); save({ duration: d }); }}>−</button>
+                <button className={styles.durationBtn} onClick={() => { const d = Math.max(1, duration - 1); setDuration(d); markChanged(); save({ duration: d }); }} disabled={!canEdit}>−</button>
                 <input
                   className={`${styles.input} ${styles.durationInput}`}
                   type="number" min={1}
                   value={duration}
                   onChange={e => { const d = Number(e.target.value); setDuration(d); markChanged(); save({ duration: d }); }}
+                  disabled={!canEdit}
                 />
-                <button className={styles.durationBtn} onClick={() => { const d = duration + 1; setDuration(d); markChanged(); save({ duration: d }); }}>+</button>
+                <button className={styles.durationBtn} onClick={() => { const d = duration + 1; setDuration(d); markChanged(); save({ duration: d }); }} disabled={!canEdit}>+</button>
               </div>
             </div>
           </div>
@@ -366,7 +375,7 @@ export function TaskEditPanel() {
           <div className={styles.field}>
             <div className={styles.labelRow}>
               <label className={styles.label}>סטטוס</label>
-              <button className={styles.manageLink} onClick={() => setShowStatusMgr(true)}>⚙ נהל</button>
+              {canEdit && <button className={styles.manageLink} onClick={() => setShowStatusMgr(true)}>⚙ נהל</button>}
             </div>
             <div className={styles.statusGrid}>
               {statuses.map(s => (
@@ -374,15 +383,18 @@ export function TaskEditPanel() {
                   key={s.id}
                   className={`${styles.statusOption} ${statusId === s.id ? styles.statusSelected : ''}`}
                   style={statusId === s.id ? { borderColor: s.color, color: s.color, background: s.color + '20' } : {}}
-                  onClick={() => handleStatusChange(s.id)}
+                  onClick={() => canEdit && handleStatusChange(s.id)}
+                  disabled={!canEdit}
                 >
                   <span className={styles.statusDot} style={{ background: s.color }} />
                   {s.name}
                 </button>
               ))}
-              <button className={styles.addStatusInline} onClick={() => setShowStatusMgr(true)}>
-                + סטטוס
-              </button>
+              {canEdit && (
+                <button className={styles.addStatusInline} onClick={() => setShowStatusMgr(true)}>
+                  + סטטוס
+                </button>
+              )}
             </div>
           </div>
 
@@ -401,14 +413,14 @@ export function TaskEditPanel() {
                     <span key={depId} className={styles.depTag}>
                       <span className={styles.depDot} style={{ background: st?.color ?? '#ccc' }} />
                       #{t.number} {t.name || 'ללא שם'}
-                      <button className={styles.removeTag} onClick={() => removeDep(depId)}>×</button>
+                      {canEdit && <button className={styles.removeTag} onClick={() => removeDep(depId)}>×</button>}
                     </span>
                   );
                 })}
               </div>
 
               {/* Dropdown to add */}
-              {otherTasks.filter(t => !dependencies.includes(t.id)).length > 0 && (
+              {canEdit && otherTasks.filter(t => !dependencies.includes(t.id)).length > 0 && (
                 <select
                   className={styles.depSelect}
                   value=""
@@ -454,6 +466,7 @@ export function TaskEditPanel() {
               onChange={(e: { target: { value: string } }) => { setDescription(e.target.value); markChanged(); save({ description: e.target.value }); }}
               placeholder="תיאור המשימה..."
               rows={3}
+              readOnly={!canEdit}
             />
           </div>
 
@@ -467,28 +480,30 @@ export function TaskEditPanel() {
                     <a href={link.url} target="_blank" rel="noopener noreferrer" className={styles.linkAnchor}>
                       🔗 {link.label}
                     </a>
-                    <button className={styles.removeTag} onClick={() => removeLink(link.id)}>×</button>
+                    {canEdit && <button className={styles.removeTag} onClick={() => removeLink(link.id)}>×</button>}
                   </div>
                 ))}
               </div>
             )}
-            <div className={styles.linkAddRow}>
-              <input
-                className={styles.input}
-                placeholder="כתובת URL..."
-                value={newLinkUrl}
-                onChange={(e: { target: { value: string } }) => setNewLinkUrl(e.target.value)}
-                onKeyDown={(e: { key: string }) => { if (e.key === 'Enter') addLink(); }}
-              />
-              <input
-                className={styles.input}
-                placeholder="תווית (אופציונלי)"
-                value={newLinkLabel}
-                onChange={(e: { target: { value: string } }) => setNewLinkLabel(e.target.value)}
-                onKeyDown={(e: { key: string }) => { if (e.key === 'Enter') addLink(); }}
-              />
-              <button className={styles.addBtn} onClick={addLink} title="הוסף קישור">+</button>
-            </div>
+            {canEdit && (
+              <div className={styles.linkAddRow}>
+                <input
+                  className={styles.input}
+                  placeholder="כתובת URL..."
+                  value={newLinkUrl}
+                  onChange={(e: { target: { value: string } }) => setNewLinkUrl(e.target.value)}
+                  onKeyDown={(e: { key: string }) => { if (e.key === 'Enter') addLink(); }}
+                />
+                <input
+                  className={styles.input}
+                  placeholder="תווית (אופציונלי)"
+                  value={newLinkLabel}
+                  onChange={(e: { target: { value: string } }) => setNewLinkLabel(e.target.value)}
+                  onKeyDown={(e: { key: string }) => { if (e.key === 'Enter') addLink(); }}
+                />
+                <button className={styles.addBtn} onClick={addLink} title="הוסף קישור">+</button>
+              </div>
+            )}
           </div>
 
           {/* Files */}
@@ -501,30 +516,34 @@ export function TaskEditPanel() {
                     <button className={styles.fileNameBtn} onClick={() => handleDownload(f.filePath, f.fileName)}>
                       📄 {f.fileName}
                     </button>
-                    <button
-                      className={styles.removeTag}
-                      onClick={() => deleteTaskFile(f.id, f.filePath)}
-                      title="מחק קובץ"
-                    >×</button>
+                    {canEdit && (
+                      <button
+                        className={styles.removeTag}
+                        onClick={() => deleteTaskFile(f.id, f.filePath)}
+                        title="מחק קובץ"
+                      >×</button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
-            <div className={styles.fileUploadRow}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                onChange={handleFileUpload}
-              />
-              <button
-                className={styles.uploadBtn}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? 'מעלה...' : '+ העלה קובץ'}
-              </button>
-            </div>
+            {canEdit && (
+              <div className={styles.fileUploadRow}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
+                <button
+                  className={styles.uploadBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? 'מעלה...' : '+ העלה קובץ'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Created at */}
@@ -535,14 +554,16 @@ export function TaskEditPanel() {
           )}
         </div>
 
-        <div className={styles.footer}>
-          <button
-            className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
-            onClick={() => save(undefined, true)}
-          >
-            {saved ? '✓ נשמר' : 'שמור'}
-          </button>
-        </div>
+        {canEdit && (
+          <div className={styles.footer}>
+            <button
+              className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
+              onClick={() => save(undefined, true)}
+            >
+              {saved ? '✓ נשמר' : 'שמור'}
+            </button>
+          </div>
+        )}
       </div>
 
       {showStatusMgr && <StatusManager onClose={() => setShowStatusMgr(false)} />}

@@ -3,82 +3,44 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--bg-secondary);
 }
 
+/* ── Column header ── */
 .header {
   display: flex;
   align-items: center;
-  height: 40px;
-  padding: 0 8px;
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border);
+  height: 56px;
+  padding: 0 10px;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border);
   flex-shrink: 0;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.7px;
   gap: 4px;
   position: relative;
-  z-index: 20;
+  z-index: var(--z-panel);
 }
 
-.colHandle {
-  width: 20px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.colHandle { width: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.colNum    { width: 28px; flex-shrink: 0; text-align: center; }
+.colName   { flex: 1; display: flex; align-items: center; gap: 5px; overflow: hidden; min-width: 0; justify-content: center; }
+.colDate   { width: 44px; flex-shrink: 0; text-align: center; }
 
-.colNum {
-  width: 28px;
-  flex-shrink: 0;
-  text-align: center;
-}
+.dateLabel { font-size: 10px; color: var(--text-muted); font-weight: 500; }
 
-.colName {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  overflow: hidden;
-  min-width: 0;
-}
+.colAssignee { width: 60px; flex-shrink: 0; display: flex; align-items: center; overflow: hidden; }
 
-.colDate {
-  width: 44px;
-  flex-shrink: 0;
-  text-align: center;
-}
-
-.dateLabel {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.colAssignee {
-  width: 60px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.assigneeCell {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  width: 100%;
-}
+.assigneeCell { display: flex; align-items: center; gap: 3px; overflow: hidden; width: 100%; }
 
 .assigneeBadge {
   font-size: 9px;
   font-weight: 700;
-  padding: 2px 5px;
-  border-radius: 4px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid;
   white-space: nowrap;
   overflow: hidden;
@@ -87,75 +49,70 @@
   display: inline-block;
 }
 
-.noAssignee {
-  font-size: 11px;
-  color: var(--text-muted);
-}
+.noAssignee { font-size: 11px; color: var(--text-muted); }
 
-.colStatus {
-  width: 64px;
-  flex-shrink: 0;
-  text-align: center;
-}
+.colStatus { width: 68px; flex-shrink: 0; text-align: center; }
 
-.rows {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-}
+/* ── Rows ── */
+.rows { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
 
-.rowWrapper {
-  position: relative;
-}
+.rowWrapper { position: relative; }
 
 .dropLine {
   position: absolute;
-  top: 0;
-  left: 8px;
-  right: 8px;
+  top: 0; left: 10px; right: 10px;
   height: 2px;
   background: var(--accent);
   border-radius: 2px;
   z-index: 5;
+  box-shadow: 0 0 6px rgba(0,180,216,0.5);
 }
 
 .row {
   display: flex;
   align-items: center;
   height: 48px;
-  padding: 0 8px;
-  border-bottom: 1px solid var(--border);
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border-light);
   cursor: pointer;
   transition: background 0.12s;
   gap: 4px;
+  position: relative;
 }
 
 .row:hover { background: var(--bg-hover); }
+
 .row.selected {
-  background: rgba(108, 99, 255, 0.12);
-  border-right: 3px solid var(--accent);
+  background: var(--accent-subtle);
+  border-bottom-color: transparent;
 }
+.row.selected::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 3px 0 0 3px;
+}
+
 .row.draggingRow {
-  opacity: 0.85;
+  opacity: 0.82;
   background: var(--bg-hover);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-md);
   transform: scale(1.01);
   z-index: 10;
-  position: relative;
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.row {
-  transition: background 0.12s, transform 0.15s;
-}
-
+/* ── Drag handle ── */
 .colHandle {
   width: 20px;
   flex-shrink: 0;
   cursor: grab;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,6 +124,7 @@
 .colHandle:active { cursor: grabbing; }
 .colHandle.handleDisabled { cursor: not-allowed; opacity: 0.2 !important; }
 
+/* ── Task content ── */
 .taskNum {
   font-size: 10px;
   color: var(--text-muted);
@@ -176,7 +134,8 @@
 }
 
 .taskName {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -184,97 +143,76 @@
   flex: 1;
 }
 
-.unnamed {
-  font-style: italic;
-  color: var(--text-muted);
-  font-size: 11px;
-}
+.unnamed { font-style: italic; color: var(--text-muted); font-size: 12px; font-weight: 400; }
 
-.depBadge {
-  font-size: 9px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.depBadge { font-size: 9px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 
-.assigneeDots {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
+/* ── Assignee avatars ── */
+.assigneeDots { display: flex; gap: 2px; align-items: center; }
 
 .assigneeDot {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid rgba(0,0,0,0.2);
+  border: 2px solid var(--bg-secondary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  margin-right: -5px;
+  transition: transform 0.12s;
 }
+.assigneeDot:last-child { margin-right: 0; }
+.row:hover .assigneeDot { transform: translateX(3px); }
 
-.moreAssignees {
-  font-size: 9px;
-  color: var(--text-muted);
-}
+.moreAssignees { font-size: 9px; color: var(--text-muted); font-weight: 600; }
 
+/* ── Status badge — Monday pill ── */
 .statusBadge {
   font-size: 9px;
   font-weight: 700;
-  padding: 2px 5px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid;
   white-space: nowrap;
   display: inline-block;
+  letter-spacing: 0.2px;
 }
 
-.empty {
-  padding: 24px 16px;
-  color: var(--text-muted);
-  font-size: 12px;
-  text-align: center;
-}
-
-/* center "משימה" label in header so אחראי is visually between it and סטטוס */
-.header .colName { justify-content: center; }
+.empty { padding: 32px 16px; color: var(--text-muted); font-size: 13px; text-align: center; line-height: 1.6; }
 
 /* ── Sort ── */
-.sortWrap {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-}
+.sortWrap { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
 
 .sortBtn {
-  padding: 0 4px;
+  padding: 2px 7px;
   background: transparent;
   border: none;
   color: var(--text-muted);
   font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
-  line-height: 24px;
-  transition: color 0.1s;
+  line-height: 26px;
+  transition: var(--transition-fast);
   cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
 }
-.sortBtn:hover { color: var(--text-primary); }
+.sortBtn:hover { color: var(--text-primary); background: var(--bg-hover); }
 .sortBtnActive { color: var(--accent); }
 
-.sortBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-}
+.sortBackdrop { position: fixed; inset: 0; z-index: 50; }
 
 .sortDropdown {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  min-width: 120px;
+  min-width: 130px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  z-index: 100;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
   overflow: hidden;
+  animation: dropIn 0.12s ease;
 }
 
 .sortItem {
@@ -282,136 +220,121 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 8px 12px;
+  padding: 9px 13px;
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-secondary);
   background: none;
   text-align: right;
-  transition: background 0.1s;
+  transition: var(--transition-fast);
   white-space: nowrap;
 }
 .sortItem:hover { background: var(--bg-hover); color: var(--text-primary); }
-.sortItemActive { color: var(--accent); background: rgba(108,99,255,0.08); }
+.sortItemActive { color: var(--accent); background: var(--accent-subtle); }
 
-.colDep {
-  width: 36px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
+/* ── Column extras ── */
+.colDep    { width: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 2px; }
+.colDelete { width: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.depIcon   { font-size: 12px; line-height: 1; }
 
-.colDelete {
-  width: 24px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.depIcon {
-  font-size: 12px;
-  line-height: 1;
-}
-
+/* ── Delete button ── */
 .deleteXBtn {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s, background 0.12s, color 0.12s;
+  transition: var(--transition-fast);
   cursor: pointer;
   flex-shrink: 0;
 }
 .row:hover .deleteXBtn { opacity: 1; }
-.deleteXBtn:hover { background: rgba(220, 60, 60, 0.15); color: #e05555; }
+.deleteXBtn:hover { background: var(--danger-subtle); color: var(--danger); }
 
-/* ── Delete confirmation ── */
+/* ── Delete confirm modal ── */
 .confirmOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(26,31,54,0.55);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: var(--z-modal);
+  animation: fadeOverlay 0.15s ease;
 }
 
 .confirmBox {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px 28px;
-  min-width: 280px;
-  max-width: 360px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-xl);
+  padding: 30px 34px;
+  min-width: 310px;
+  max-width: 380px;
+  box-shadow: var(--shadow-xl);
   text-align: center;
+  animation: fadeInUp 0.18s ease;
 }
 
-.confirmText {
-  font-size: 14px;
-  color: var(--text-primary);
-  line-height: 1.6;
-  margin: 0 0 20px;
-}
+.confirmText { font-size: 14px; font-weight: 500; color: var(--text-primary); line-height: 1.7; margin: 0 0 22px; }
 
-.confirmActions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
+.confirmActions { display: flex; gap: 10px; justify-content: center; }
 
 .confirmDelete {
-  padding: 8px 20px;
-  border-radius: 7px;
-  background: #dc3545;
+  padding: 9px 22px;
+  border-radius: var(--radius-sm);
+  background: var(--danger);
   border: none;
-  color: #fff;
+  color: white;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: var(--transition-fast);
+  box-shadow: 0 2px 8px rgba(226,68,92,0.35);
+  font-family: var(--font);
 }
-.confirmDelete:hover { background: #c82333; }
+.confirmDelete:hover { background: var(--danger-hover); }
 
 .confirmCancel {
-  padding: 8px 20px;
-  border-radius: 7px;
+  padding: 9px 22px;
+  border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: var(--transition-fast);
+  font-family: var(--font);
 }
 .confirmCancel:hover { background: var(--bg-hover); color: var(--text-primary); }
 
+/* ── Add task ── */
 .addTaskBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 8px 12px;
-  padding: 7px 14px;
+  gap: 7px;
+  margin: 8px 10px;
+  padding: 8px 14px;
   background: transparent;
-  border: 1px dashed var(--border);
-  border-radius: 6px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
-  width: calc(100% - 24px);
+  transition: var(--transition-fast);
+  width: calc(100% - 20px);
+  font-family: var(--font);
 }
-
 .addTaskBtn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: var(--accent-subtle, rgba(108, 99, 255, 0.08));
+  background: var(--accent-subtle);
 }
