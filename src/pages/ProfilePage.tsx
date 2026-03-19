@@ -160,19 +160,14 @@ export function ProfilePage() {
   async function updateMemberRole(userId: string, newRole: string) {
     if (!account) return;
     setRoleUpdateErr(null);
-    const { data: row, error: rowErr } = await supabase
-      .from('account_members')
-      .select('id')
-      .eq('account_id', account.id)
-      .eq('user_id', userId)
-      .single();
     setEditingRoleFor(null);
-    if (rowErr || !row?.id) { setRoleUpdateErr('שגיאה בעדכון תפקיד'); return; }
-    const { error } = await supabase.rpc('update_member_role', {
-      p_member_id: row.id,
-      p_new_role: newRole,
+    const { data, error } = await supabase.functions.invoke('update-member-role', {
+      body: { targetUserId: userId, accountId: account.id, newRole },
     });
-    if (error) { setRoleUpdateErr('שגיאה בעדכון תפקיד'); return; }
+    if (error || data?.error) {
+      setRoleUpdateErr('שגיאה בעדכון תפקיד');
+      return;
+    }
     await loadProfileData();
   }
 

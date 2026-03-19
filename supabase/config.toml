@@ -1,0 +1,5 @@
+[functions.invite-user]
+verify_jwt = false
+
+[functions.update-member-role]
+verify_jwt = false
