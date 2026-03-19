@@ -161,14 +161,12 @@ export function ProfilePage() {
     if (!account) return;
     setRoleUpdateErr(null);
     setEditingRoleFor(null);
-    const { data, error } = await supabase.functions.invoke('update-member-role', {
-      body: { targetUserId: userId, accountId: account.id, newRole },
-    });
-    const errMsg = data?.error ?? (error as { message?: string } | null)?.message ?? null;
-    if (errMsg) {
-      setRoleUpdateErr(errMsg);
-      return;
-    }
+    const { error } = await supabase
+      .from('account_members')
+      .update({ role: newRole })
+      .eq('account_id', account.id)
+      .eq('user_id', userId);
+    if (error) { setRoleUpdateErr(error.message); return; }
     await loadProfileData();
   }
 
