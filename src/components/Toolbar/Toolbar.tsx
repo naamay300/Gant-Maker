@@ -4,6 +4,7 @@ import { usePermissions } from '../../contexts/AuthContext';
 import { StatusManager } from '../StatusManager/StatusManager';
 import { getTimelineStartDate } from '../../utils/dateUtils';
 import { addDays, differenceInDays, startOfDay } from 'date-fns';
+import { supabase } from '../../lib/supabase';
 import styles from './Toolbar.module.css';
 
 interface Props {
@@ -26,6 +27,8 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
   const [showShare, setShowShare] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
+  const [shareSending, setShareSending] = useState(false);
+  const [shareEmailMsg, setShareEmailMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [sharePos, setSharePos] = useState({ top: 0, left: 0 });
   const shareRef = useRef<HTMLDivElement>(null);
   const shareBtnRef = useRef<HTMLButtonElement>(null);
@@ -76,12 +79,37 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
     document.body.removeChild(ta);
   }
 
-  function handleSendEmail() {
-    if (!shareEmail.trim()) return;
-    const subject = encodeURIComponent(`הוזמנת לצפות בפרויקט: ${project?.name ?? ''}`);
-    const body = encodeURIComponent(`שלום,\nהוזמנת לצפות בפרויקט הגאנט "${project?.name ?? ''}".\nלחץ על הקישור: ${window.location.href}`);
-    window.open(`mailto:${shareEmail.trim()}?subject=${subject}&body=${body}`);
-    setShareEmail('');
+  async function handleSendEmail() {
+    if (!shareEmail.trim() || !project) return;
+    setShareSending(true);
+    setShareEmailMsg(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('invite-user', {
+        body: {
+          email: shareEmail.trim(),
+          role: 'viewer',
+          accountId: project.accountId,
+          projectId: project.id,
+        },
+      });
+      if (fnError) {
+        const ctx = (fnError as { context?: unknown }).context;
+        let msg = (fnError as { message?: string }).message ?? String(fnError);
+        if (ctx instanceof Response) {
+          try { const j = await ctx.json(); msg = j.error ?? msg; } catch { /* ignore */ }
+        } else if (ctx && typeof ctx === 'object' && 'error' in ctx) {
+          msg = (ctx as { error: string }).error;
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      setShareEmailMsg({ type: 'ok', text: 'ההזמנה נשלחה בהצלחה ✓' });
+      setShareEmail('');
+    } catch (err) {
+      setShareEmailMsg({ type: 'err', text: (err as Error).message });
+    } finally {
+      setShareSending(false);
+    }
   }
 
   function scrollByMonth(dir: 1 | -1) {
@@ -163,20 +191,33 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
                 </div>
                 <div className={styles.shareDivider} />
                 <div className={styles.shareSection}>
-                  <div className={styles.shareSectionLabel}>שליחה במייל</div>
+                  <div className={styles.shareSectionLabel}>הזמן לפרויקט במייל</div>
                   <div className={styles.shareRow}>
                     <input
                       className={styles.shareInput}
                       type="email"
                       placeholder="הכנס כתובת מייל..."
                       value={shareEmail}
-                      onChange={e => setShareEmail(e.target.value)}
+                      onChange={e => { setShareEmail(e.target.value); setShareEmailMsg(null); }}
                       onKeyDown={e => e.key === 'Enter' && handleSendEmail()}
+                      disabled={shareSending}
                     />
-                    <button className={styles.shareSendBtn} onClick={handleSendEmail}>
-                      שלח
+                    <button
+                      className={styles.shareSendBtn}
+                      onClick={handleSendEmail}
+                      disabled={shareSending || !shareEmail.trim()}
+                    >
+                      {shareSending ? '...' : 'שלח'}
                     </button>
                   </div>
+                  {shareEmailMsg && (
+                    <div style={{
+                      marginTop: 6, fontSize: 11, padding: '4px 2px',
+                      color: shareEmailMsg.type === 'ok' ? '#22c55e' : '#e2445c',
+                    }}>
+                      {shareEmailMsg.text}
+                    </div>
+                  )}
                 </div>
               </div>
             </>

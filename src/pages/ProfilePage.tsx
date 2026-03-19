@@ -116,11 +116,6 @@ export function ProfilePage() {
     }
   }
 
-  async function updateInvitationStatus(invitationId: string, newStatus: string) {
-    await supabase.from('invitations').update({ status: newStatus }).eq('id', invitationId);
-    await loadProfileData();
-  }
-
   async function handleSave() {
     if (!hasChanges) return;
     setSaving(true);
@@ -267,9 +262,21 @@ export function ProfilePage() {
                           const inv = invitations.find(i => i.email === m.email);
                           if (!inv) return null;
                           return (
-                            <span className={`${styles.invitationStatus} ${inv.status === 'accepted' ? styles.statusAccepted : styles.statusPending}`}>
-                              {inv.status === 'accepted' ? '✓ אישר' : 'ממתין'}
-                            </span>
+                            <>
+                              <span className={`${styles.invitationStatus} ${inv.status === 'accepted' ? styles.statusAccepted : styles.statusPending}`}>
+                                {inv.status === 'accepted' ? '✓ אישר' : 'ממתין'}
+                              </span>
+                              {inv.status === 'pending' && isAdmin && (
+                                <button
+                                  className={styles.resendBtn}
+                                  onClick={() => handleResend(inv.email, inv.role)}
+                                  disabled={resendingFor === inv.email}
+                                  title="שלח הזמנה חוזרת"
+                                >
+                                  {resendingFor === inv.email ? '...' : '↻ שלח שוב'}
+                                </button>
+                              )}
+                            </>
                           );
                         })()}
                         <div className={styles.roleWrap}>
@@ -326,31 +333,6 @@ export function ProfilePage() {
                     </div>
                   )}
 
-                  {invitations.some(inv => inv.status === 'pending') && (
-                    <>
-                      <div className={styles.invitationsLabel}>הזמנות שנשלחו וטרם אושרו</div>
-                      <div className={styles.invitationList}>
-                        {invitations.filter(inv => inv.status === 'pending').map((inv: Invitation) => (
-                          <div key={inv.id} className={styles.invitationRow}>
-                            <span className={styles.invitationEmail}>{inv.email}</span>
-                            <button
-                              className={styles.resendBtn}
-                              onClick={() => updateInvitationStatus(inv.id, 'accepted')}
-                            >
-                              שנה סטטוס
-                            </button>
-                            <button
-                              className={styles.resendBtn}
-                              onClick={() => handleResend(inv.email, inv.role)}
-                              disabled={resendingFor === inv.email}
-                            >
-                              {resendingFor === inv.email ? '...' : 'שלח מייל שוב'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </div>
 
                 {/* Projects card */}
