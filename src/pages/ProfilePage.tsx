@@ -158,12 +158,22 @@ export function ProfilePage() {
 
   async function updateMemberRole(userId: string, newRole: string) {
     if (!account) return;
-    await supabase.from('account_members')
-      .update({ role: newRole })
+    // Get the row id (needed by update_member_role SECURITY DEFINER RPC)
+    const { data: row, error: rowErr } = await supabase
+      .from('account_members')
+      .select('id')
       .eq('account_id', account.id)
-      .eq('user_id', userId);
-    setEditingRoleFor(null);
-    await loadProfileData();
+      .eq('user_id', userId)
+      .single();
+    if (rowErr || !row?.id) return;
+    const { error } = await supabase.rpc('update_member_role', {
+      p_member_id: row.id,
+      p_new_role: newRole,
+    });
+    if (!error) {
+      setEditingRoleFor(null);
+      await loadProfileData();
+    }
   }
 
   async function addMemberToProject(projectId: string, userId: string) {
