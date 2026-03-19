@@ -70,6 +70,7 @@ export function ProfilePage() {
 
   const [addingToProject, setAddingToProject] = useState<string | null>(null);
   const [editingRoleFor, setEditingRoleFor] = useState<string | null>(null);
+  const [roleUpdateErr, setRoleUpdateErr] = useState<string | null>(null);
 
   const isOwner = account?.role === 'owner';
   const isAdmin = isOwner || account?.role === 'editor';
@@ -158,22 +159,21 @@ export function ProfilePage() {
 
   async function updateMemberRole(userId: string, newRole: string) {
     if (!account) return;
-    // Get the row id (needed by update_member_role SECURITY DEFINER RPC)
+    setRoleUpdateErr(null);
     const { data: row, error: rowErr } = await supabase
       .from('account_members')
       .select('id')
       .eq('account_id', account.id)
       .eq('user_id', userId)
       .single();
-    if (rowErr || !row?.id) return;
+    setEditingRoleFor(null);
+    if (rowErr || !row?.id) { setRoleUpdateErr('שגיאה בעדכון תפקיד'); return; }
     const { error } = await supabase.rpc('update_member_role', {
       p_member_id: row.id,
       p_new_role: newRole,
     });
-    if (!error) {
-      setEditingRoleFor(null);
-      await loadProfileData();
-    }
+    if (error) { setRoleUpdateErr('שגיאה בעדכון תפקיד'); return; }
+    await loadProfileData();
   }
 
   async function addMemberToProject(projectId: string, userId: string) {
@@ -260,6 +260,9 @@ export function ProfilePage() {
                 {/* Members card */}
                 <div className={styles.card}>
                   <div className={styles.cardTitle}>חברי הסביבה ({members.length})</div>
+                  {roleUpdateErr && (
+                    <div className={`${styles.inviteMsg} ${styles.inviteMsgErr}`}>{roleUpdateErr}</div>
+                  )}
                   <div className={styles.memberList}>
                     {members.map((m: Member) => (
                       <div key={m.userId} className={styles.memberRow}>
