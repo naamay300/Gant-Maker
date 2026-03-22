@@ -22,6 +22,7 @@ interface ProjectMember {
   userId: string;
   email: string;
   fullName: string;
+  role: string;
 }
 
 interface Project {
@@ -102,7 +103,7 @@ export function ProfilePage() {
       const projectIds = loadedProjects.map(p => p.id);
       const { data: pmData } = await supabase
         .from('project_members')
-        .select('project_id, user_id')
+        .select('project_id, user_id, role')
         .in('project_id', projectIds);
       const allUserIds = [...new Set((pmData ?? []).map((r: { user_id: string }) => r.user_id))];
       let profilesById: Record<string, { email: string; full_name: string }> = {};
@@ -118,11 +119,12 @@ export function ProfilePage() {
       loadedProjects = loadedProjects.map(proj => ({
         ...proj,
         members: (pmData ?? [])
-          .filter((r: { project_id: string; user_id: string }) => r.project_id === proj.id)
-          .map((r: { project_id: string; user_id: string }) => ({
+          .filter((r: { project_id: string; user_id: string; role: string }) => r.project_id === proj.id)
+          .map((r: { project_id: string; user_id: string; role: string }) => ({
             userId: r.user_id,
             email: profilesById[r.user_id]?.email ?? '',
             fullName: profilesById[r.user_id]?.full_name ?? '',
+            role: r.role,
           })),
       }));
     }
@@ -403,58 +405,87 @@ export function ProfilePage() {
 
                 </div>
 
-                {/* Projects card */}
-                <div className={styles.card}>
-                  <div className={styles.cardTitle}>פרויקטים ({projects.length})</div>
-                  {projects.length === 0 && <div className={styles.empty}>אין פרויקטים עדיין</div>}
-                  <div className={styles.projectList}>
-                    {projects.map((p: Project) => (
-                      <div key={p.id} className={styles.projectRow}>
-                        <div className={styles.projectLeft}>
-                          <div className={styles.projectName}>{p.name}</div>
-                          <div className={styles.taskCount}>{p.taskCount} משימות</div>
-                        </div>
-                        <div className={styles.projectRight}>
-                          {p.members.map((m: ProjectMember) => (
-                            <div
-                              key={m.userId}
-                              className={styles.memberChip}
-                              title={m.fullName || m.email}
-                              onClick={() => isAdmin && removeMemberFromProject(p.id, m.userId)}
-                            >
-                              {(m.fullName || m.email || '?')[0].toUpperCase()}
+                {/* Projects cards */}
+                {projects.map((p: Project) => (
+                  <div key={p.id} className={styles.card}>
+                    <div className={styles.cardTitle}>
+                      {p.name}
+                      <span className={styles.projectTaskCount}>{p.taskCount} משימות · {p.members.length} חברים</span>
+                    </div>
+                    <div className={styles.memberList}>
+                      {p.members.map((m: ProjectMember) => {
+                        const inv = invitations.find(i => i.email === m.email);
+                        return (
+                          <div key={m.userId} className={styles.memberRow}>
+                            <div className={styles.avatar}>{(m.fullName || m.email || '?')[0].toUpperCase()}</div>
+                            <div className={styles.memberInfo}>
+                              <span className={styles.memberName}>{m.fullName || m.email}</span>
+                              {m.fullName && <span className={styles.memberEmail}>{m.email}</span>}
                             </div>
-                          ))}
-                          {isAdmin && (
-                            <div className={styles.addMemberWrap}>
+                            {inv && (
+                              <>
+                                <span className={`${styles.invitationStatus} ${inv.status === 'accepted' ? styles.statusAccepted : styles.statusPending}`}>
+                                  {inv.status === 'accepted' ? '✓ אישר' : 'ממתין'}
+                                </span>
+                                {isAdmin && (
+                                  <button
+                                    className={styles.resendBtn}
+                                    onClick={() => handleResend(inv.email, inv.role)}
+                                    disabled={resendingFor === inv.email}
+                                    title="שלח הזמנה חוזרת"
+                                  >
+                                    {resendingFor === inv.email ? '...' : '↻ שלח שוב'}
+                                  </button>
+                                )}
+                              </>
+                            )}
+                            <span className={`${styles.roleTag} ${styles['role_' + m.role]}`}>
+                              {ROLE_LABELS[m.role] ?? m.role}
+                            </span>
+                            {isAdmin && (
                               <button
-                                className={styles.addMemberBtn}
-                                onClick={() => setAddingToProject(addingToProject === p.id ? null : p.id)}
-                              >+</button>
-                              {addingToProject === p.id && (
-                                <div className={styles.memberDropdown}>
-                                  {getMembersNotInProject(p).length === 0
-                                    ? <div className={styles.dropdownEmpty}>כולם כבר משויכים</div>
-                                    : getMembersNotInProject(p).map((m: Member) => (
-                                      <button
-                                        key={m.userId}
-                                        className={styles.dropdownItem}
-                                        onClick={() => addMemberToProject(p.id, m.userId)}
-                                      >
-                                        <div className={styles.avatarSm}>{(m.fullName || m.email || '?')[0].toUpperCase()}</div>
-                                        <span>{m.fullName || m.email}</span>
-                                      </button>
-                                    ))
-                                  }
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                                className={styles.removeMemberBtn}
+                                onClick={() => removeMemberFromProject(p.id, m.userId)}
+                                title="הסר מהפרויקט"
+                              >✕</button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {p.members.length === 0 && <div className={styles.empty}>אין חברים בפרויקט</div>}
+                    </div>
+                    {isAdmin && (
+                      <div className={styles.addMemberWrap} style={{ position: 'relative', marginTop: 8 }}>
+                        <button
+                          className={styles.addMemberBtn}
+                          onClick={() => setAddingToProject(addingToProject === p.id ? null : p.id)}
+                        >+ הוסף חבר לפרויקט</button>
+                        {addingToProject === p.id && (
+                          <div className={styles.memberDropdown}>
+                            {getMembersNotInProject(p).length === 0
+                              ? <div className={styles.dropdownEmpty}>כולם כבר משויכים</div>
+                              : getMembersNotInProject(p).map((m: Member) => (
+                                <button
+                                  key={m.userId}
+                                  className={styles.dropdownItem}
+                                  onClick={() => addMemberToProject(p.id, m.userId)}
+                                >
+                                  <div className={styles.avatarSm}>{(m.fullName || m.email || '?')[0].toUpperCase()}</div>
+                                  <span>{m.fullName || m.email}</span>
+                                </button>
+                              ))
+                            }
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
+                ))}
+                {projects.length === 0 && (
+                  <div className={styles.card}>
+                    <div className={styles.empty}>אין פרויקטים עדיין</div>
+                  </div>
+                )}
               </>
             )}
           </>
