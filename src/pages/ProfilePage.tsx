@@ -87,46 +87,76 @@ export function ProfilePage() {
     setWsLoading(true);
     const { data } = await supabase.rpc('get_profile_data');
     let loadedProjects: Project[] = [];
+    let loadedMembers: Member[] = [];
     if (data) {
       if (data.myFullName) setFullName(data.myFullName);
       if (data.myEmail) setMyEmail(data.myEmail);
-      setMembers((data.members ?? []).map((m: { userId: string; role: string; email: string; fullName: string }) => ({
+      loadedMembers = (data.members ?? []).map((m: { userId: string; role: string; email: string; fullName: string }) => ({
         userId: m.userId, role: m.role, email: m.email, fullName: m.fullName,
-      })));
+      }));
+      setMembers(loadedMembers);
       loadedProjects = (data.projects ?? []).map((p: { id: string; name: string; taskCount: number }) => ({
         id: p.id, name: p.name, taskCount: p.taskCount, members: [],
       }));
     }
 
-    // Fetch real project members (not task assignees)
+    // Build project members = workspace members + project-specific members
+    // Workspace members appear in ALL projects (with their workspace role)
+    // project_members rows override role if a specific project role exists
     if (loadedProjects.length > 0) {
       const projectIds = loadedProjects.map(p => p.id);
       const { data: pmData } = await supabase
         .from('project_members')
         .select('project_id, user_id, role')
         .in('project_id', projectIds);
-      const allUserIds = [...new Set((pmData ?? []).map((r: { user_id: string }) => r.user_id))];
+
+      // Build projectMembersMap: projectId → { userId → role }
+      const projectRoleMap: Record<string, Record<string, string>> = {};
+      (pmData ?? []).forEach((r: { project_id: string; user_id: string; role: string }) => {
+        if (!projectRoleMap[r.project_id]) projectRoleMap[r.project_id] = {};
+        projectRoleMap[r.project_id][r.user_id] = r.role;
+      });
+
+      // Collect all user IDs we need profiles for (workspace members + project-only members)
+      const projectOnlyUserIds = [...new Set((pmData ?? []).map((r: { user_id: string }) => r.user_id))];
+      const wsUserIds = loadedMembers.map((m: Member) => m.userId);
+      const allNeeded = [...new Set([...projectOnlyUserIds, ...wsUserIds])];
+
       let profilesById: Record<string, { email: string; full_name: string }> = {};
-      if (allUserIds.length > 0) {
+      if (allNeeded.length > 0) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('id, email, full_name')
-          .in('id', allUserIds);
+          .in('id', allNeeded);
         (profileData ?? []).forEach((p: { id: string; email: string; full_name: string }) => {
           profilesById[p.id] = { email: p.email, full_name: p.full_name };
         });
       }
-      loadedProjects = loadedProjects.map(proj => ({
-        ...proj,
-        members: (pmData ?? [])
-          .filter((r: { project_id: string; user_id: string; role: string }) => r.project_id === proj.id)
-          .map((r: { project_id: string; user_id: string; role: string }) => ({
-            userId: r.user_id,
-            email: profilesById[r.user_id]?.email ?? '',
-            fullName: profilesById[r.user_id]?.full_name ?? '',
-            role: r.role,
-          })),
-      }));
+
+      loadedProjects = loadedProjects.map(proj => {
+        const projectRoles = projectRoleMap[proj.id] ?? {};
+
+        // Start with all workspace members
+        const wsMemberRows: ProjectMember[] = loadedMembers.map((m: Member) => ({
+          userId: m.userId,
+          email: m.email,
+          fullName: m.fullName,
+          role: projectRoles[m.userId] ?? m.role, // project-specific role overrides ws role
+        }));
+
+        // Add project-only members (not in workspace)
+        const wsIds = new Set(loadedMembers.map((m: Member) => m.userId));
+        const projectOnlyRows: ProjectMember[] = Object.keys(projectRoles)
+          .filter(uid => !wsIds.has(uid))
+          .map(uid => ({
+            userId: uid,
+            email: profilesById[uid]?.email ?? '',
+            fullName: profilesById[uid]?.full_name ?? '',
+            role: projectRoles[uid],
+          }));
+
+        return { ...proj, members: [...wsMemberRows, ...projectOnlyRows] };
+      });
     }
     setProjects(loadedProjects);
 
