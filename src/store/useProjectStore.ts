@@ -106,6 +106,13 @@ export function applyFiltersAndSort(
 }
 
 // ─── Store interface ──────────────────────────────────────────────────────────
+export interface ProjectMemberInfo {
+  userId: string;
+  email: string;
+  fullName: string;
+  role: string;
+}
+
 interface ProjectStore {
   projects: Project[];
   activeProjectId: string | null;
@@ -119,6 +126,7 @@ interface ProjectStore {
   taskListWidth: number;
   pixelsPerDay: number;
   isLoading: boolean;
+  projectMembersMap: Record<string, ProjectMemberInfo[]>;
 
   // Initialization
   initializeApp: (accountId: string) => Promise<void>;
@@ -179,6 +187,7 @@ export const useProjectStore = create<ProjectStore>()(
       pixelsPerDay: 40,
       isLoading: false,
       taskFiles: [] as TaskFile[],
+      projectMembersMap: {} as Record<string, ProjectMemberInfo[]>,
 
       // ── Initialization ────────────────────────────────────────────────────
       initializeApp: async (accountId: string) => {
@@ -215,12 +224,33 @@ export const useProjectStore = create<ProjectStore>()(
       },
 
       loadProjectData: async (projectId: string) => {
-        const [{ data: statusData }, { data: taskData }] = await Promise.all([
+        const [{ data: statusData }, { data: taskData }, { data: memberData }] = await Promise.all([
           supabase.from('project_statuses').select('*').eq('project_id', projectId).order('sort_order', { ascending: true }),
           supabase.from('tasks').select('*').eq('project_id', projectId).order('task_order', { ascending: true }),
+          supabase.from('project_members').select('user_id, role').eq('project_id', projectId),
         ]);
 
         if (statusData === null || taskData === null) return;
+
+        // Fetch profiles for all project members
+        const memberUserIds = (memberData ?? []).map((m: { user_id: string; role: string }) => m.user_id);
+        let profilesById: Record<string, { email: string; full_name: string }> = {};
+        if (memberUserIds.length > 0) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .in('id', memberUserIds);
+          (profileData ?? []).forEach((p: { id: string; email: string; full_name: string }) => {
+            profilesById[p.id] = { email: p.email, full_name: p.full_name };
+          });
+        }
+        const projectMembers: ProjectMemberInfo[] = (memberData ?? []).map((m: { user_id: string; role: string }) => ({
+          userId: m.user_id,
+          email: profilesById[m.user_id]?.email ?? '',
+          fullName: profilesById[m.user_id]?.full_name ?? '',
+          role: m.role,
+        }));
+        set(s => ({ projectMembersMap: { ...s.projectMembersMap, [projectId]: projectMembers } }));
 
         const loadedStatuses = (statusData ?? []).map(s => statusFromDB(s as Record<string, unknown>));
         const loadedTasks = (taskData ?? []).map(t => taskFromDB(t as Record<string, unknown>));
@@ -659,4 +689,10 @@ export function useAllAssignees(): Assignee[] {
   const map = new Map<string, string>();
   projects.forEach(p => p.tasks.forEach(t => t.assignees.forEach(a => map.set(a.name, a.color))));
   return Array.from(map.entries()).map(([name, color]) => ({ name, color }));
+}
+
+export function useActiveProjectMembers(): ProjectMemberInfo[] {
+  const { projectMembersMap, activeProjectId } = useProjectStore();
+  if (!activeProjectId) return [];
+  return projectMembersMap[activeProjectId] ?? [];
 }

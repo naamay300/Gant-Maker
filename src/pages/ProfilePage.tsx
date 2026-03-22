@@ -62,6 +62,7 @@ export function ProfilePage() {
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<string>('editor');
+  const [inviteMessage, setInviteMessage] = useState('');
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -84,16 +85,49 @@ export function ProfilePage() {
   async function loadProfileData() {
     setWsLoading(true);
     const { data } = await supabase.rpc('get_profile_data');
+    let loadedProjects: Project[] = [];
     if (data) {
       if (data.myFullName) setFullName(data.myFullName);
       if (data.myEmail) setMyEmail(data.myEmail);
       setMembers((data.members ?? []).map((m: { userId: string; role: string; email: string; fullName: string }) => ({
         userId: m.userId, role: m.role, email: m.email, fullName: m.fullName,
       })));
-      setProjects((data.projects ?? []).map((p: { id: string; name: string; taskCount: number; members: ProjectMember[] }) => ({
-        id: p.id, name: p.name, taskCount: p.taskCount, members: p.members ?? [],
-      })));
+      loadedProjects = (data.projects ?? []).map((p: { id: string; name: string; taskCount: number }) => ({
+        id: p.id, name: p.name, taskCount: p.taskCount, members: [],
+      }));
     }
+
+    // Fetch real project members (not task assignees)
+    if (loadedProjects.length > 0) {
+      const projectIds = loadedProjects.map(p => p.id);
+      const { data: pmData } = await supabase
+        .from('project_members')
+        .select('project_id, user_id')
+        .in('project_id', projectIds);
+      const allUserIds = [...new Set((pmData ?? []).map((r: { user_id: string }) => r.user_id))];
+      let profilesById: Record<string, { email: string; full_name: string }> = {};
+      if (allUserIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', allUserIds);
+        (profileData ?? []).forEach((p: { id: string; email: string; full_name: string }) => {
+          profilesById[p.id] = { email: p.email, full_name: p.full_name };
+        });
+      }
+      loadedProjects = loadedProjects.map(proj => ({
+        ...proj,
+        members: (pmData ?? [])
+          .filter((r: { project_id: string; user_id: string }) => r.project_id === proj.id)
+          .map((r: { project_id: string; user_id: string }) => ({
+            userId: r.user_id,
+            email: profilesById[r.user_id]?.email ?? '',
+            fullName: profilesById[r.user_id]?.full_name ?? '',
+          })),
+      }));
+    }
+    setProjects(loadedProjects);
+
     if (account) {
       const { data: invData } = await supabase
         .from('invitations')
@@ -129,11 +163,16 @@ export function ProfilePage() {
   async function handleInvite(e: { preventDefault(): void }) {
     e.preventDefault();
     if (!inviteEmail.trim() || !account) return;
+    // Duplicate check
+    if (members.some(m => m.email.toLowerCase() === inviteEmail.trim().toLowerCase())) {
+      setInviteMsg({ type: 'err', text: 'משתמש זה כבר חבר בסביבת העבודה' });
+      return;
+    }
     setInviting(true);
     setInviteMsg(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke('invite-user', {
-        body: { email: inviteEmail.trim(), role: inviteRole, accountId: account.id },
+        body: { email: inviteEmail.trim(), role: inviteRole, accountId: account.id, message: inviteMessage.trim() || undefined },
       });
       // fnError can contain the JSON body for non-2xx responses
       if (fnError) {
@@ -149,6 +188,7 @@ export function ProfilePage() {
       if (data?.error) throw new Error(data.error);
       setInviteMsg({ type: 'ok', text: 'הזמנה נשלחה במייל' });
       setInviteEmail('');
+      setInviteMessage('');
       await loadProfileData();
     } catch (err) {
       setInviteMsg({ type: 'err', text: (err as Error).message });
@@ -170,6 +210,12 @@ export function ProfilePage() {
     await loadProfileData();
   }
 
+  async function removeMemberFromWorkspace(userId: string) {
+    if (!account) return;
+    await supabase.rpc('remove_member', { p_account_id: account.id, p_user_id: userId });
+    await loadProfileData();
+  }
+
   async function addMemberToProject(projectId: string, userId: string) {
     await supabase.from('project_members').insert({ project_id: projectId, user_id: userId });
     setAddingToProject(null);
@@ -177,8 +223,7 @@ export function ProfilePage() {
   }
 
   async function removeMemberFromProject(projectId: string, userId: string) {
-    await supabase.from('project_members').delete()
-      .eq('project_id', projectId).eq('user_id', userId);
+    await supabase.rpc('remove_project_member', { p_project_id: projectId, p_user_id: userId });
     await loadProfileData();
   }
 
@@ -273,7 +318,7 @@ export function ProfilePage() {
                               <span className={`${styles.invitationStatus} ${inv.status === 'accepted' ? styles.statusAccepted : styles.statusPending}`}>
                                 {inv.status === 'accepted' ? '✓ אישר' : 'ממתין'}
                               </span>
-                              {inv.status === 'pending' && isAdmin && (
+                              {isAdmin && (
                                 <button
                                   className={styles.resendBtn}
                                   onClick={() => handleResend(inv.email, inv.role)}
@@ -307,31 +352,47 @@ export function ProfilePage() {
                             </div>
                           )}
                         </div>
+                        {isOwner && (
+                          <button
+                            className={styles.removeMemberBtn}
+                            onClick={() => removeMemberFromWorkspace(m.userId)}
+                            title="הסר מסביבת העבודה"
+                          >✕</button>
+                        )}
                       </div>
                     ))}
                   </div>
 
                   {isAdmin && (
                     <form onSubmit={handleInvite} className={styles.inviteForm}>
-                      <input
-                        className={styles.input}
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e: { target: { value: string } }) => setInviteEmail(e.target.value)}
-                        placeholder="+ הזמן משתמש חדש במייל..."
-                        dir="ltr"
+                      <div className={styles.inviteRow}>
+                        <input
+                          className={styles.input}
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e: { target: { value: string } }) => setInviteEmail(e.target.value)}
+                          placeholder="+ הזמן משתמש חדש במייל..."
+                          dir="ltr"
+                        />
+                        <select
+                          className={styles.roleSelect}
+                          value={inviteRole}
+                          onChange={(e: { target: { value: string } }) => setInviteRole(e.target.value)}
+                        >
+                          <option value="editor">עורך</option>
+                          <option value="viewer">צופה</option>
+                        </select>
+                        <button className={styles.inviteBtn} type="submit" disabled={inviting || !inviteEmail.trim()}>
+                          {inviting ? '...' : 'שלח'}
+                        </button>
+                      </div>
+                      <textarea
+                        className={styles.inviteMessageInput}
+                        value={inviteMessage}
+                        onChange={(e: { target: { value: string } }) => setInviteMessage(e.target.value)}
+                        placeholder="הוסף הודעה אישית (אופציונלי)..."
+                        rows={2}
                       />
-                      <select
-                        className={styles.roleSelect}
-                        value={inviteRole}
-                        onChange={(e: { target: { value: string } }) => setInviteRole(e.target.value)}
-                      >
-                        <option value="editor">עורך</option>
-                        <option value="viewer">צופה</option>
-                      </select>
-                      <button className={styles.inviteBtn} type="submit" disabled={inviting || !inviteEmail.trim()}>
-                        {inviting ? '...' : 'שלח'}
-                      </button>
                     </form>
                   )}
                   {inviteMsg && (

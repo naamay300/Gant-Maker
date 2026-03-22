@@ -11,6 +11,7 @@ function inviteEmailHtml(
   workspaceName: string,
   inviteUrl: string,
   projectName?: string | null,
+  message?: string | null,
 ): string {
   const isProject = !!projectName;
   const title = isProject ? `הוזמנת לפרויקט "${projectName}"` : `הוזמנת לסביבת עבודה`;
@@ -21,6 +22,9 @@ function inviteEmailHtml(
   const sub = isProject
     ? 'לחץ/י על הכפתור כדי להיכנס לפרויקט.'
     : 'לחץ/י על הכפתור כדי לאשר את ההזמנה וצור/י חשבון בחינם.';
+  const messageBlock = message?.trim()
+    ? `<div style="margin:16px 0 20px;padding:12px 16px;background:#f0f8fc;border-right:3px solid #00b4d8;border-radius:6px;color:#444;font-size:14px;line-height:1.6;white-space:pre-wrap;">${message.trim()}</div>`
+    : '';
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -36,6 +40,7 @@ function inviteEmailHtml(
     <div style="padding:32px;">
       <h2 style="margin:0 0 16px;color:#1a1a2e;font-size:22px;font-weight:700;">${title} 🎉</h2>
       <p style="color:#555;font-size:15px;line-height:1.7;margin:0 0 8px;">${desc}</p>
+      ${messageBlock}
       <p style="color:#555;font-size:15px;line-height:1.7;margin:0 0 28px;">${sub}</p>
       <div style="text-align:center;margin:28px 0;">
         <a href="${inviteUrl}"
@@ -74,7 +79,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { email, accountId, projectId, role } = await req.json();
+    const { email, accountId, projectId, role, message } = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -146,7 +151,7 @@ serve(async (req) => {
             await sendEmail(
               resendKey, fromEmail, email,
               `${inviterName} הוסיף/ה אותך לפרויקט "${projectName ?? ''}"`,
-              inviteEmailHtml(inviterName, workspaceName, appUrl, projectName),
+              inviteEmailHtml(inviterName, workspaceName, appUrl, projectName, message),
             );
           }
           return new Response(JSON.stringify({ type: 'added_to_project' }), {
@@ -177,7 +182,7 @@ serve(async (req) => {
         await sendEmail(
           resendKey, fromEmail, email,
           `${inviterName} הוסיף/ה אותך ל${projectName ? `פרויקט "${projectName}"` : workspaceName}`,
-          inviteEmailHtml(inviterName, workspaceName, appUrl, projectName),
+          inviteEmailHtml(inviterName, workspaceName, appUrl, projectName, message),
         );
       }
       return new Response(JSON.stringify({ type: 'added_directly' }), {
@@ -204,7 +209,7 @@ serve(async (req) => {
         await sendEmail(
           resendKey, fromEmail, email,
           `${inviterName} הזמין/ה אותך ל${projectName ? `פרויקט "${projectName}"` : workspaceName}`,
-          inviteEmailHtml(inviterName, workspaceName, inviteUrl, projectName),
+          inviteEmailHtml(inviterName, workspaceName, inviteUrl, projectName, message),
         );
       }
     } else {

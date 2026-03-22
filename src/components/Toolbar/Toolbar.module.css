@@ -339,4 +339,34 @@
 }
 .shareSendBtn:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
+.shareMessageInput {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font);
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  margin-top: 6px;
+}
+.shareMessageInput:focus { border-color: var(--accent); }
+.shareMessageInput::placeholder { color: var(--text-muted); }
+
+.shareRoleSelect {
+  padding: 0 8px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .shareDivider { height: 1px; background: var(--border-light); margin: 0 16px; }

@@ -278,9 +278,31 @@
 /* ── Invite form ── */
 .inviteForm {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inviteRow {
+  display: flex;
   gap: 8px;
   align-items: center;
 }
+
+.inviteMessageInput {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font);
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+}
+.inviteMessageInput:focus { border-color: var(--accent); }
+.inviteMessageInput::placeholder { color: var(--text-muted); }
 
 .roleSelect {
   background: var(--bg-tertiary);
@@ -523,6 +545,21 @@
 }
 .resendBtn:hover:not(:disabled) { opacity: 0.7; }
 .resendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.removeMemberBtn {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.1s, background 0.1s;
+  opacity: 0;
+}
+.memberRow:hover .removeMemberBtn { opacity: 1; }
+.removeMemberBtn:hover { color: #e05555; background: rgba(224,85,85,0.08); }
 
 /* ── States ── */
 .loading { text-align: center; color: var(--text-muted); font-size: 13px; padding: 8px 0; }

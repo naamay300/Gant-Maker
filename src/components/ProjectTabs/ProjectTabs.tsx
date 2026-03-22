@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjectStore, useActiveProject } from '../../store/useProjectStore';
+import { useProjectStore, useActiveProjectMembers } from '../../store/useProjectStore';
 import { useAuth, usePermissions } from '../../contexts/AuthContext';
 import styles from './ProjectTabs.module.css';
 
@@ -9,7 +9,7 @@ export function ProjectTabs() {
   const { user, profile, account, signOut } = useAuth();
   const { canManage } = usePermissions();
   const navigate = useNavigate();
-  const activeProject = useActiveProject();
+  const projectMembers = useActiveProjectMembers();
 
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -34,21 +34,18 @@ export function ProjectTabs() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [showUserMenu, showMembersPopup]);
 
-  // Unique assignees from active project
-  const uniqueAssignees = useMemo(() => {
-    if (!activeProject) return [];
-    const seen = new Set<string>();
-    const result: { name: string; color: string }[] = [];
-    for (const task of activeProject.tasks) {
-      for (const a of task.assignees) {
-        if (!seen.has(a.name)) {
-          seen.add(a.name);
-          result.push(a);
-        }
-      }
-    }
-    return result;
-  }, [activeProject]);
+  const MEMBER_COLORS = ['#4e8ef7','#f76e4e','#4ecf8e','#f7c94e','#a34ef7','#f74e9d','#4ed0f7','#f7a24e'];
+  function memberColor(userId: string) {
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+    return MEMBER_COLORS[hash % MEMBER_COLORS.length];
+  }
+  function memberInitial(m: { fullName: string; email: string }) {
+    return (m.fullName || m.email || '?')[0].toUpperCase();
+  }
+  function memberLabel(m: { fullName: string; email: string }) {
+    return m.fullName || m.email;
+  }
 
   function handleAdd() {
     const name = newName.trim();
@@ -129,37 +126,37 @@ export function ProjectTabs() {
         </nav>
 
         {/* Member avatars */}
-        {uniqueAssignees.length > 0 && (
+        {projectMembers.length > 0 && (
           <div className={styles.membersArea} ref={membersRef}>
             <div
               className={styles.memberDots}
               onClick={() => setShowMembersPopup(v => !v)}
               title="חברי צוות"
             >
-              {uniqueAssignees.slice(0, 5).map((a, i) => (
+              {projectMembers.slice(0, 5).map((m, i) => (
                 <div
-                  key={a.name}
+                  key={m.userId}
                   className={styles.memberDot}
-                  style={{ background: a.color, zIndex: 10 - i }}
-                  title={a.name}
+                  style={{ background: memberColor(m.userId), zIndex: 10 - i }}
+                  title={memberLabel(m)}
                 >
-                  {a.name[0].toUpperCase()}
+                  {memberInitial(m)}
                 </div>
               ))}
-              {uniqueAssignees.length > 5 && (
-                <div className={styles.memberMore}>+{uniqueAssignees.length - 5}</div>
+              {projectMembers.length > 5 && (
+                <div className={styles.memberMore}>+{projectMembers.length - 5}</div>
               )}
             </div>
 
             {showMembersPopup && (
               <div className={styles.membersPopup}>
                 <div className={styles.membersPopupTitle}>חברי צוות</div>
-                {uniqueAssignees.map(a => (
-                  <div key={a.name} className={styles.membersPopupRow}>
-                    <div className={styles.membersPopupDot} style={{ background: a.color }}>
-                      {a.name[0].toUpperCase()}
+                {projectMembers.map(m => (
+                  <div key={m.userId} className={styles.membersPopupRow}>
+                    <div className={styles.membersPopupDot} style={{ background: memberColor(m.userId) }}>
+                      {memberInitial(m)}
                     </div>
-                    <span className={styles.membersPopupName}>{a.name}</span>
+                    <span className={styles.membersPopupName}>{memberLabel(m)}</span>
                   </div>
                 ))}
               </div>

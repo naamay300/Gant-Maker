@@ -1,5 +1,5 @@
 import { useState, useEffect, RefObject, useRef } from 'react';
-import { useProjectStore, useSortedFilteredTasks, useActiveProject } from '../../store/useProjectStore';
+import { useProjectStore, useSortedFilteredTasks, useActiveProject, useActiveProjectMembers } from '../../store/useProjectStore';
 import { usePermissions } from '../../contexts/AuthContext';
 import { StatusManager } from '../StatusManager/StatusManager';
 import { getTimelineStartDate } from '../../utils/dateUtils';
@@ -27,8 +27,11 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
   const [showShare, setShowShare] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
+  const [shareRole, setShareRole] = useState<'editor' | 'viewer'>('viewer');
+  const [shareMessage, setShareMessage] = useState('');
   const [shareSending, setShareSending] = useState(false);
   const [shareEmailMsg, setShareEmailMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const projectMembers = useActiveProjectMembers();
   const [sharePos, setSharePos] = useState({ top: 0, left: 0 });
   const shareRef = useRef<HTMLDivElement>(null);
   const shareBtnRef = useRef<HTMLButtonElement>(null);
@@ -81,15 +84,21 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
 
   async function handleSendEmail() {
     if (!shareEmail.trim() || !project) return;
+    // Duplicate check
+    if (projectMembers.some(m => m.email.toLowerCase() === shareEmail.trim().toLowerCase())) {
+      setShareEmailMsg({ type: 'err', text: 'משתמש זה כבר חבר בפרויקט' });
+      return;
+    }
     setShareSending(true);
     setShareEmailMsg(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke('invite-user', {
         body: {
           email: shareEmail.trim(),
-          role: 'viewer',
+          role: shareRole,
           accountId: project.accountId,
           projectId: project.id,
+          message: shareMessage.trim() || undefined,
         },
       });
       if (fnError) {
@@ -105,6 +114,7 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
       if (data?.error) throw new Error(data.error);
       setShareEmailMsg({ type: 'ok', text: 'ההזמנה נשלחה בהצלחה ✓' });
       setShareEmail('');
+      setShareMessage('');
     } catch (err) {
       setShareEmailMsg({ type: 'err', text: (err as Error).message });
     } finally {
@@ -202,6 +212,14 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
                       onKeyDown={e => e.key === 'Enter' && handleSendEmail()}
                       disabled={shareSending}
                     />
+                    <select
+                      className={styles.shareRoleSelect}
+                      value={shareRole}
+                      onChange={e => setShareRole(e.target.value as 'editor' | 'viewer')}
+                    >
+                      <option value="editor">עורך</option>
+                      <option value="viewer">צופה</option>
+                    </select>
                     <button
                       className={styles.shareSendBtn}
                       onClick={handleSendEmail}
@@ -210,6 +228,13 @@ export function Toolbar({ ganttScrollRef, mainRef }: Props) {
                       {shareSending ? '...' : 'שלח'}
                     </button>
                   </div>
+                  <textarea
+                    className={styles.shareMessageInput}
+                    value={shareMessage}
+                    onChange={e => setShareMessage(e.target.value)}
+                    placeholder="הוסף הודעה אישית (אופציונלי)..."
+                    rows={2}
+                  />
                   {shareEmailMsg && (
                     <div style={{
                       marginTop: 6, fontSize: 11, padding: '4px 2px',
