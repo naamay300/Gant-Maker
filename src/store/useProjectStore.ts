@@ -224,32 +224,59 @@ export const useProjectStore = create<ProjectStore>()(
       },
 
       loadProjectData: async (projectId: string) => {
-        const [{ data: statusData }, { data: taskData }, { data: memberData }] = await Promise.all([
+        const accountId = get().projects.find(p => p.id === projectId)?.accountId;
+        const [{ data: statusData }, { data: taskData }, { data: memberData }, { data: wsMemberData }] = await Promise.all([
           supabase.from('project_statuses').select('*').eq('project_id', projectId).order('sort_order', { ascending: true }),
           supabase.from('tasks').select('*').eq('project_id', projectId).order('task_order', { ascending: true }),
           supabase.from('project_members').select('user_id, role').eq('project_id', projectId),
+          accountId
+            ? supabase.from('account_members').select('user_id, role').eq('account_id', accountId)
+            : Promise.resolve({ data: [] }),
         ]);
 
         if (statusData === null || taskData === null) return;
 
-        // Fetch profiles for all project members
-        const memberUserIds = (memberData ?? []).map((m: { user_id: string; role: string }) => m.user_id);
+        // Merge workspace members + project-specific members
+        const projectRoleMap: Record<string, string> = {};
+        (memberData ?? []).forEach((m: { user_id: string; role: string }) => {
+          projectRoleMap[m.user_id] = m.role;
+        });
+
+        const allUserIds = [...new Set([
+          ...(wsMemberData ?? []).map((m: { user_id: string }) => m.user_id),
+          ...(memberData ?? []).map((m: { user_id: string }) => m.user_id),
+        ])];
+
         let profilesById: Record<string, { email: string; full_name: string }> = {};
-        if (memberUserIds.length > 0) {
+        if (allUserIds.length > 0) {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('id, email, full_name')
-            .in('id', memberUserIds);
+            .in('id', allUserIds);
           (profileData ?? []).forEach((p: { id: string; email: string; full_name: string }) => {
             profilesById[p.id] = { email: p.email, full_name: p.full_name };
           });
         }
-        const projectMembers: ProjectMemberInfo[] = (memberData ?? []).map((m: { user_id: string; role: string }) => ({
-          userId: m.user_id,
-          email: profilesById[m.user_id]?.email ?? '',
-          fullName: profilesById[m.user_id]?.full_name ?? '',
-          role: m.role,
-        }));
+
+        // Workspace members first (with project role override if exists)
+        const wsIds = new Set((wsMemberData ?? []).map((m: { user_id: string }) => m.user_id));
+        const projectMembers: ProjectMemberInfo[] = [
+          ...(wsMemberData ?? []).map((m: { user_id: string; role: string }) => ({
+            userId: m.user_id,
+            email: profilesById[m.user_id]?.email ?? '',
+            fullName: profilesById[m.user_id]?.full_name ?? '',
+            role: projectRoleMap[m.user_id] ?? m.role,
+          })),
+          // Project-only members not in workspace
+          ...(memberData ?? [])
+            .filter((m: { user_id: string }) => !wsIds.has(m.user_id))
+            .map((m: { user_id: string; role: string }) => ({
+              userId: m.user_id,
+              email: profilesById[m.user_id]?.email ?? '',
+              fullName: profilesById[m.user_id]?.full_name ?? '',
+              role: m.role,
+            })),
+        ];
         set(s => ({ projectMembersMap: { ...s.projectMembersMap, [projectId]: projectMembers } }));
 
         const loadedStatuses = (statusData ?? []).map(s => statusFromDB(s as Record<string, unknown>));

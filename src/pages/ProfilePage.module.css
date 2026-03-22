@@ -112,6 +112,12 @@
   margin-right: auto;
 }
 
+.collapseIcon {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 /* ── Form fields ── */
 .field {
   display: flex;
