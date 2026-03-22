@@ -23,6 +23,7 @@ interface ProjectMember {
   email: string;
   fullName: string;
   role: string;
+  isInProjectTable: boolean; // false = workspace-only member
 }
 
 interface Project {
@@ -143,7 +144,8 @@ export function ProfilePage() {
           userId: m.userId,
           email: m.email,
           fullName: m.fullName,
-          role: projectRoles[m.userId] ?? m.role, // project-specific role overrides ws role
+          role: projectRoles[m.userId] ?? m.role,
+          isInProjectTable: m.userId in projectRoles,
         }));
 
         // Add project-only members (not in workspace)
@@ -155,6 +157,7 @@ export function ProfilePage() {
             email: profilesById[uid]?.email ?? '',
             fullName: profilesById[uid]?.full_name ?? '',
             role: projectRoles[uid],
+            isInProjectTable: true,
           }));
 
         return { ...proj, members: [...wsMemberRows, ...projectOnlyRows] };
@@ -524,7 +527,7 @@ export function ProfilePage() {
                                       </div>
                                     )}
                                   </div>
-                                  {isOwner && (
+                                  {isOwner && m.isInProjectTable && (
                                     <button
                                       className={styles.removeMemberBtn}
                                       onClick={() => removeMemberFromProject(p.id, m.userId)}
