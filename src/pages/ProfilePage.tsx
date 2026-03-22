@@ -201,11 +201,11 @@ export function ProfilePage() {
     if (!account) return;
     setRoleUpdateErr(null);
     setEditingRoleFor(null);
-    const { error } = await supabase
-      .from('account_members')
-      .update({ role: newRole })
-      .eq('account_id', account.id)
-      .eq('user_id', userId);
+    const { error } = await supabase.rpc('update_member_role', {
+      p_account_id: account.id,
+      p_user_id: userId,
+      p_role: newRole,
+    });
     if (error) { setRoleUpdateErr(error.message); return; }
     await loadProfileData();
   }
