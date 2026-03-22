@@ -186,9 +186,14 @@ export const useProjectStore = create<ProjectStore>()(
         await get().reloadProjects();
         const { projects } = get();
         if (projects.length > 0) {
-          const firstId = projects[0].id;
-          set({ activeProjectId: firstId });
-          await get().loadProjectData(firstId);
+          // If the user just accepted a project invite, open that project directly
+          const pendingProjectId = localStorage.getItem('invite_project_id');
+          localStorage.removeItem('invite_project_id');
+          const targetId = (pendingProjectId && projects.find(p => p.id === pendingProjectId))
+            ? pendingProjectId
+            : projects[0].id;
+          set({ activeProjectId: targetId });
+          await get().loadProjectData(targetId);
         }
         set({ isLoading: false });
       },

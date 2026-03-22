@@ -29,6 +29,12 @@ export function AuthCallback() {
         });
       }
 
+      // If invited to a specific project, remember it so /app can select it
+      const projectId = user.user_metadata?.project_id as string | undefined;
+      if (projectId) {
+        localStorage.setItem('invite_project_id', projectId);
+      }
+
       navigate('/app', { replace: true });
     });
   }, [navigate]);

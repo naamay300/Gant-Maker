@@ -159,12 +159,14 @@ serve(async (req) => {
       }
 
       // Exists but not a workspace member → add directly
+      const accountRole = ['owner', 'admin'].includes(role) ? role : 'member';
+      const projectRole = role === 'owner' ? 'admin' : role === 'editor' ? 'admin' : 'member';
       await adminClient.from('account_members').insert(
-        { account_id: accountId, user_id: existingProfile.id, role },
+        { account_id: accountId, user_id: existingProfile.id, role: accountRole },
       );
       if (projectId) {
         await adminClient.from('project_members').upsert(
-          { project_id: projectId, user_id: existingProfile.id, role, invited_by: callerId },
+          { project_id: projectId, user_id: existingProfile.id, role: projectRole, invited_by: callerId },
           { onConflict: 'project_id,user_id' },
         );
       }
@@ -215,13 +217,17 @@ serve(async (req) => {
     }
 
     if (invitedUserId) {
-      await adminClient.from('account_members').upsert(
-        { account_id: accountId, user_id: invitedUserId, role },
+      // Map UI roles to DB-safe roles (CHECK constraint only allows 'owner','admin','manager','member')
+      const accountRole = ['owner', 'admin'].includes(role) ? role : 'member';
+      const projectRole = role === 'owner' ? 'admin' : role === 'editor' ? 'admin' : 'member';
+      const { error: amErr } = await adminClient.from('account_members').upsert(
+        { account_id: accountId, user_id: invitedUserId, role: accountRole },
         { onConflict: 'account_id,user_id' },
       );
+      if (amErr) throw new Error(`account_members upsert failed: ${amErr.message}`);
       if (projectId) {
         await adminClient.from('project_members').upsert(
-          { project_id: projectId, user_id: invitedUserId, role, invited_by: callerId },
+          { project_id: projectId, user_id: invitedUserId, role: projectRole, invited_by: callerId },
           { onConflict: 'project_id,user_id' },
         );
       }
